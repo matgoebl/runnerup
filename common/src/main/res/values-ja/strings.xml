@@ -14,7 +14,6 @@
   ~
   ~  You should have received a copy of the GNU General Public License
   ~  along with this program.  If not, see <http://www.gnu.org/licenses/>.-->
-  <string name="app_name">RunnerUp</string>
   <!--metrics stuff-->
   <string name="metrics_distance_km">km</string>
   <string name="metrics_distance_mi">mi</string>
@@ -24,15 +23,10 @@
   <string name="metrics_elapsed_min">min</string>
   <string name="metrics_elapsed_s">s</string>
   <string name="metrics_heartrate">Hr</string>
-  <!--format hint stuff-->
   <string name="Maximum_heart_rate_MHR">最大心拍数 (MHR)</string>
   <string name="Target_pace_HHMMSS">目標ペース</string>
-  <!--strings with argument to provide-->
   <!--first argument is a date, second a time, for instance: "Yesterday at 13:32"-->
   <string name="formatting_date_at_time">%1$s %2$s</string>
-  <!--weird stuff: should it be placeholders or even removed?-->
-  <string name="ok_rats">OK</string>
-  <!--other-->
   <string name="Type">タイプ</string>
   <string name="active">アクティブ</string>
   <string name="rest">休憩</string>
@@ -65,7 +59,6 @@
   <string name="Interval">インターバル</string>
   <string name="Lap">ラップ</string>
   <string name="New_lap">新しいラップ</string>
-  <string name="Next_lap">次のラップ</string>
   <string name="Pause">一時休止</string>
   <string name="Stop">休止</string>
   <string name="Workout">ワークアウト</string>
@@ -150,16 +143,10 @@
   <string name="Select_type_of_Bluetooth_device">Bluetooth デバイスのタイプを選択してください</string>
   <string name="Scanning">スキャン中</string>
   <string name="Failed_to_load_workout">ワークアウトのロードに失敗しました!!</string>
-  <string name="Problem">問題</string>
   <string name="Edit_step">ステップを編集</string>
   <string name="Create_new_audio_cue_scheme">新しい音声合図スキームを作成</string>
-  <string name="Great">すばらしい!</string>
-  <string name="OK_darn">OK</string>
   <string name="Yes">はい</string>
   <string name="Create">作成</string>
-  <string name="Darn">驚いた!</string>
-  <string name="Dismiss">閉じる</string>
-  <string name="No_way">とんでもない</string>
   <string name="No">いいえ</string>
   <string name="Loading">ロード中…</string>
   <string name="Saving">保存中</string>
@@ -272,7 +259,6 @@
   <string name="Activity_ready">アクティビティ準備完了</string>
   <string name="Ready_to_start_running">ランニング準備完了</string>
   <string name="Searching_for_GPS">GPS を検索中</string>
-  <string name="Activity_ongoing">アクティビティ継続中</string>
   <string name="RunnerUp_activity_started">RunnerUp アクティビティが開始しました</string>
   <string name="Low_HRM_battery_level">低 HRM バッテリーレベル</string>
   <string name="High_HRM_battery_level">高 HRM バッテリーレベル</string>
@@ -314,7 +300,6 @@
   <string name="No_feed_to_show">表示するフィードはありません</string>
   <string name="Unused_currently">現在未使用です。</string>
   <string name="Unknown">不明</string>
-  <string name="RunningFreeOnlinePasswordNotice">注: ウェブサイトの 追加 &gt; トレーニングの同期 &gt; SportTracks の下で設定したパスワードとして \"秘密鍵\" を使用します。</string>
   <string name="Recording">記録中</string>
   <string name="Sensors">センサー</string>
   <string name="Maintenance">メンテナンス</string>
@@ -342,7 +327,9 @@
   <string name="Speed_unit_preference">スピード単位</string>
   <string name="path_simplification">経路の単純化</string>
   <string name="path_simplification_info">GPS経路の解像度を下げます (時間の経過とともに記録された場所)。 経路を滑らかにして、データベースやエクスポートされたファイル内のアクティビティのサイズを小さくします。</string>
-    <string name="path_simplification_tolerance">公差（m）</string>
+  <string name="path_simplification_on_save">アクティビティの保存時に単純化</string>
+  <string name="path_simplification_on_export">アカウントへのアップロード時に単純化</string>
+  <string name="path_simplification_tolerance">公差（m）</string>
   <string name="path_simplification_algorithm">アルゴリズム</string>
   <string name="path_simplification_algorithm_info">高速または高品質の経路簡素化を選択</string>
   <string name="path_simplification_menu">経路を単純化する</string>

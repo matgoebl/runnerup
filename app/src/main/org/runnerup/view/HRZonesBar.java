@@ -17,7 +17,6 @@
 
 package org.runnerup.view;
 
-import android.app.Activity;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -25,6 +24,8 @@ import android.graphics.Paint;
 import android.util.Log;
 import android.view.View;
 import android.widget.LinearLayout;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 import org.runnerup.R;
 
@@ -65,8 +66,8 @@ public class HRZonesBar extends View {
         }
 
         //calculate bar height and chart offset
-        Activity activity = (Activity) getContext();
-        LinearLayout buttons = (LinearLayout)activity.findViewById(R.id.buttons);
+        AppCompatActivity activity = (AppCompatActivity) getContext();
+        LinearLayout buttons = activity.findViewById(R.id.buttons);
 
         int actualHeight = getHeight() - buttons.getHeight();
         float calculatedBarHeight = (actualHeight - 2*borderSize - (hrzData.length-1) * separatorSize)/hrzData.length; // Height of the bar
@@ -124,7 +125,9 @@ public class HRZonesBar extends View {
 
             //draw actual values and bars
             if(calculatedBarHeight > minBarHeight) {
+                //noinspection IntegerDivisionInFloatingPointContext
                 canvas.drawText(zoneName, zoneOffset, topOffset + (i+1) * borderSize + calculatedBarHeight * (i + 1) - fontSize / 2, fontPaint);
+                //noinspection IntegerDivisionInFloatingPointContext
                 canvas.drawText(percent + "%", percentOffset, topOffset + (i+1) * borderSize + calculatedBarHeight * (i + 1) - fontSize / 2, fontPaint);
             }
 

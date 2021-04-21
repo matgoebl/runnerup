@@ -38,12 +38,14 @@ public class DistancePicker extends LinearLayout {
         super(context, attrs);
 
         unitMeters = new NumberPicker(context, attrs);
-        LinearLayout unitStringLayout = new LinearLayout(context, attrs);
+        LinearLayout unitStringLayout = new LinearLayout(context);
         unitStringLayout.setGravity(Gravity.CENTER_HORIZONTAL | Gravity.CENTER_VERTICAL);
         unitStringLayout.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT,
                 LayoutParams.MATCH_PARENT));
-        unitString = new TextView(context, attrs);
+        unitString = new TextView(context);
         unitString.setTextSize(25);
+        unitString.setMinimumHeight(48);
+        unitString.setMinimumWidth(48);
         unitStringLayout.addView(unitString);
         meters = new NumberPicker(context, attrs);
 

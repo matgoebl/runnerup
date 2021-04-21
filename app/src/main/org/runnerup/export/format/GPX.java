@@ -29,7 +29,6 @@ import org.runnerup.workout.Sport;
 import java.io.IOException;
 import java.io.Writer;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
@@ -37,12 +36,12 @@ import java.util.TimeZone;
 
 public class GPX {
 
-    private SQLiteDatabase mDB;
+    private final SQLiteDatabase mDB;
     private KXmlSerializer mXML;
-    private SimpleDateFormat simpleDateFormat;
+    private final SimpleDateFormat simpleDateFormat;
     final private boolean mGarminExt; //Also Cluetrust
     private final boolean mAccuracyExtensions;
-    private PathSimplifier simplifier;
+    private final PathSimplifier simplifier;
 
     public GPX(SQLiteDatabase mDB, PathSimplifier simplifier) {
         this(mDB, true, false, simplifier);
@@ -131,7 +130,7 @@ public class GPX {
                 mXML.endTag("", "desc");
             }
 
-            exportLaps(activityId, startTime * 1000);
+            exportLaps(activityId);
             mXML.endTag("", "trk");
             mXML.endTag("", "gpx");
             mXML.flush();
@@ -145,7 +144,7 @@ public class GPX {
         }
     }
 
-    private void exportLaps(long activityId, long startTime) throws IOException {
+    private void exportLaps(long activityId) throws IOException {
         String[] lColumns = {
                 DB.LAP.LAP, DB.LAP.DISTANCE, DB.LAP.TIME,
                 DB.LAP.INTENSITY
@@ -167,10 +166,6 @@ public class GPX {
         boolean lok = cLap.moveToFirst();
         boolean pok = cLocation.moveToFirst();
 
-        // simplify path, if this option is selected by the user
-        ArrayList<Integer> ignoreIDs = simplifier != null ?
-                simplifier.getNoisyLocationIDs(mDB, activityId) :
-                new ArrayList<>();
         // Tracks with time gaps may show as unconnected, mostly the same as this setting
         final boolean useLapTrkSeg = (simplifier == null);
 
@@ -198,10 +193,7 @@ public class GPX {
                                 }
                                 mXML.comment(" State change: " + locType + " " + formatTime(time));
                             }
-                        } else if (time > last_time &&
-                                // ignore IDs that have been marked unnecessary by path simplification
-                                // reduces resolution of the exported path
-                                ! ignoreIDs.contains(cLocation.getInt(15))) {
+                        } else if (time > last_time) {
                             if (segmentPoints == 0) {
                                 mXML.startTag("", "trkseg");
                             }

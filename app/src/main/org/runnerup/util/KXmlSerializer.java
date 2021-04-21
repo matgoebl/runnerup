@@ -23,9 +23,10 @@ package org.runnerup.util;
 
 import android.text.TextUtils;
 
+import org.xmlpull.v1.*;
+
 import java.io.*;
 import java.util.Locale;
-import org.xmlpull.v1.*;
 
 
 public class KXmlSerializer implements XmlSerializer {
@@ -155,7 +156,7 @@ public class KXmlSerializer implements XmlSerializer {
 
     // BEGIN android-added
     private static void reportInvalidCharacter(char ch) {
-        throw new IllegalArgumentException("Illegal character (" + Integer.toHexString((int) ch) + ")");
+        throw new IllegalArgumentException("Illegal character (" + Integer.toHexString(ch) + ")");
     }
     // END android-added
 

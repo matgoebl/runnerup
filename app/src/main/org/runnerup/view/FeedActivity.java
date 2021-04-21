@@ -21,15 +21,9 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
-import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.app.AppCompatDelegate;
-import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
@@ -38,13 +32,19 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
+import androidx.appcompat.content.res.AppCompatResources;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.ContextCompat;
+
 import org.runnerup.R;
 import org.runnerup.common.util.Constants;
 import org.runnerup.common.util.Constants.DB.FEED;
 import org.runnerup.db.DBHelper;
 import org.runnerup.export.SyncManager;
 import org.runnerup.export.SyncManager.Callback;
-import org.runnerup.export.Synchronizer.Status;
+import org.runnerup.export.Synchronizer;
 import org.runnerup.feed.FeedImageLoader;
 import org.runnerup.feed.FeedList;
 import org.runnerup.util.Formatter;
@@ -76,21 +76,19 @@ public class FeedActivity extends AppCompatActivity implements Constants {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.feed);
 
-        Toolbar actionbar = (Toolbar) findViewById(R.id.feed_actionbar);
+        Toolbar actionbar = findViewById(R.id.feed_actionbar);
         actionbar.inflateMenu(R.menu.feed_menu);
-        actionbar.setOnMenuItemClickListener(new Toolbar.OnMenuItemClickListener() {
-            @Override
-            public boolean onMenuItemClick(MenuItem item) {
-                switch (item.getItemId()) {
-                    case R.id.menu_configure_accounts:
-                        configureAccounts();
-                        return true;
-                    case R.id.menu_refresh:
-                        refresh();
-                        return true;
-                }
-                return false;
+        actionbar.setOnMenuItemClickListener(item -> {
+            int id = item.getItemId();
+            if (id == R.id.menu_configure_accounts) {
+                configureAccounts();
+                return true;
             }
+            if (id == R.id.menu_refresh) {
+                refresh();
+                return true;
+            }
+            return false;
         });
 
         syncManager = new SyncManager(this);
@@ -100,12 +98,12 @@ public class FeedActivity extends AppCompatActivity implements Constants {
         feed.load(); // load from DB
 
         feedAdapter = new FeedListAdapter(this, feed);
-        ListView feedList = (ListView) findViewById(R.id.feed_list);
+        ListView feedList = findViewById(R.id.feed_list);
         feedList.setAdapter(feedAdapter);
         feedList.setDividerHeight(2);
 
-        feedProgress = (LinearLayout) findViewById(R.id.feed_progress);
-        feedProgressLabel = (TextView) findViewById(R.id.feed_progress_label);
+        feedProgress = findViewById(R.id.feed_progress);
+        feedProgressLabel = findViewById(R.id.feed_progress_label);
         startSync();
 
         AppCompatDelegate.setCompatVectorFromResourcesEnabled(true);
@@ -130,19 +128,14 @@ public class FeedActivity extends AppCompatActivity implements Constants {
         Set<String> set = syncManager.feedSynchronizersSet(this);
         if (!set.isEmpty()) {
             feedProgress.setVisibility(View.VISIBLE);
-            feedProgressLabel.setText(getString(R.string.synchronizing_feed));
+            feedProgressLabel.setText(R.string.synchronizing_feed);
             syncManager.synchronizeFeed(syncDone, set, feed, null);
         } else {
             feedProgress.setVisibility(View.GONE);
         }
     }
 
-    private final Callback syncDone = new Callback() {
-        @Override
-        public void run(String synchronizerName, Status status) {
-            feedProgress.setVisibility(View.GONE);
-        }
-    };
+    private final Callback syncDone = (synchronizerName, status) -> feedProgress.setVisibility(View.GONE);
 
     @Override
     public void onDestroy() {
@@ -154,6 +147,7 @@ public class FeedActivity extends AppCompatActivity implements Constants {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
         startSync();
     }
 
@@ -206,7 +200,7 @@ public class FeedActivity extends AppCompatActivity implements Constants {
             if (FeedList.isHeaderDate(tmp)) {
 
                 View v = layoutInflator.inflate(R.layout.feed_row_date_header, parent, false);
-                TextView tv = (TextView)v.findViewById(R.id.feed_date_header);
+                TextView tv = v.findViewById(R.id.feed_date_header);
                 DateFormat a = android.text.format.DateFormat.getLongDateFormat(context);
                 tv.setText(a.format(tmp.getAsLong(DB.FEED.START_TIME)));
                 return v;
@@ -214,24 +208,19 @@ public class FeedActivity extends AppCompatActivity implements Constants {
             } else if (FeedList.isActivity(tmp)) {
 
                 View v = layoutInflator.inflate(R.layout.feed_row_activity, parent, false);
-                final ImageView ivAvatar = (ImageView)v.findViewById(R.id.feed_avatar);
-                ImageView ivSport = (ImageView)v.findViewById(R.id.feed_sport_emblem);
-                TextView tvPerson = (TextView)v.findViewById(R.id.feed_person);
-                TextView tvSource = (TextView)v.findViewById(R.id.feed_source);
-                TextView tvSport = (TextView)v.findViewById(R.id.feed_sport);
-                TextView tvDistance = (TextView)v.findViewById(R.id.feed_distance);
-                TextView tvDuration = (TextView)v.findViewById(R.id.feed_duration);
-                TextView tvPace = (TextView)v.findViewById(R.id.feed_pace);
-                TextView tvNotes = (TextView)v.findViewById(R.id.feed_notes);
+                final ImageView ivAvatar = v.findViewById(R.id.feed_avatar);
+                ImageView ivSport = v.findViewById(R.id.feed_sport_emblem);
+                TextView tvPerson = v.findViewById(R.id.feed_person);
+                TextView tvSource = v.findViewById(R.id.feed_source);
+                TextView tvSport = v.findViewById(R.id.feed_sport);
+                TextView tvDistance = v.findViewById(R.id.feed_distance);
+                TextView tvDuration = v.findViewById(R.id.feed_duration);
+                TextView tvPace = v.findViewById(R.id.feed_pace);
+                TextView tvNotes = v.findViewById(R.id.feed_notes);
 
                 // avatar
                 if (tmp.containsKey(DB.FEED.USER_IMAGE_URL)) {
-                    FeedImageLoader.LoadImageAsync(tmp.getAsString(DB.FEED.USER_IMAGE_URL), new FeedImageLoader.Callback() {
-                        @Override
-                        public void run(String url, Bitmap b) {
-                            ivAvatar.setImageBitmap(b);
-                        }
-                    });
+                    FeedImageLoader.LoadImageAsync(tmp.getAsString(DB.FEED.USER_IMAGE_URL), (url, b) -> ivAvatar.setImageBitmap(b));
                 }
 
                 // String time = formatter.formatTime(Formatter.TXT,
@@ -243,16 +232,19 @@ public class FeedActivity extends AppCompatActivity implements Constants {
                 tvPerson.setText(name);
 
                 // source
-                String src = syncManager.getSynchronizer(tmp.getAsLong(FEED.ACCOUNT_ID)).getName();
-                tvSource.setText(src);
+                Synchronizer sync = syncManager.getSynchronizer(tmp.getAsLong(FEED.ACCOUNT_ID));
+                if (sync != null){
+                    String src = sync.getName();
+                    tvSource.setText(src);
+                }
 
                 // sport
                 int sportId = tmp.getAsInteger(DB.FEED.FEED_SUBTYPE);
-                Drawable sportDrawable = ContextCompat.getDrawable(context, Sport.drawableColored16Of(sportId));
+                Drawable sportDrawable = AppCompatResources.getDrawable(context, Sport.drawableColored16Of(sportId));
                 ivSport.setImageDrawable(sportDrawable);
 
                 String sportName = Sport.textOf(getResources(), sportId);
-                int sportColor = getResources().getColor(Sport.colorOf(sportId));
+                int sportColor = ContextCompat.getColor(FeedActivity.this, Sport.colorOf(sportId));
                 tvSport.setText(sportName);
                 tvSport.setTextColor(sportColor);
 

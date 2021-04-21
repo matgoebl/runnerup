@@ -90,7 +90,7 @@ public class TrackerCadence extends DefaultTrackerComponent implements SensorEve
                 mCurrentCadence = null;
             } else {
                 final long nanoSec = 1000000000L;
-                Float val = (latestVal - mPrevVal) / 2 * 60 * nanoSec / (latestTime - mPrevTime);
+                float val = (latestVal - mPrevVal) / 2 * 60 * nanoSec / (latestTime - mPrevTime);
                 if (mCurrentCadence == null) {
                     mCurrentCadence = val;
                 } else {
@@ -117,7 +117,7 @@ public class TrackerCadence extends DefaultTrackerComponent implements SensorEve
 
     private Sensor getSensor(final Context context) {
         Sensor sensor = null;
-        if (Build.VERSION.SDK_INT >= 20) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             if (mSensorManager == null) {
                 mSensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
             }

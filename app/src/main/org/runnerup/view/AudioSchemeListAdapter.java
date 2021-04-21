@@ -20,6 +20,7 @@ package org.runnerup.view;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -34,9 +35,9 @@ import java.util.ArrayList;
 
 class AudioSchemeListAdapter extends BaseAdapter {
 
-    private LayoutInflater inflater = null;
-    private SQLiteDatabase mDB = null;
-    private boolean createNewItem = true;
+    private final LayoutInflater inflater;
+    private final SQLiteDatabase mDB;
+    private final boolean createNewItem;
     private final ArrayList<String> audioSchemes = new ArrayList<>();
 
     public AudioSchemeListAdapter(SQLiteDatabase db, LayoutInflater inflater, boolean createNew) {
@@ -82,7 +83,7 @@ class AudioSchemeListAdapter extends BaseAdapter {
                     false);
         }
 
-        TextView ret = (TextView) convertView.findViewById(android.R.id.text1);
+        TextView ret = convertView.findViewById(android.R.id.text1);
         ret.setText(getItem(position).toString());
         return ret;
     }
@@ -97,18 +98,22 @@ class AudioSchemeListAdapter extends BaseAdapter {
 
     public void reload() {
         audioSchemes.clear();
-        String[] from = new String[]{
-                DB.AUDIO_SCHEMES.NAME
-        };
+        try {
+            String[] from = new String[]{
+                    DB.AUDIO_SCHEMES.NAME
+            };
 
-        Cursor c = mDB.query(DB.AUDIO_SCHEMES.TABLE, from, null, null, null, null,
-                DB.AUDIO_SCHEMES.SORT_ORDER + " desc");
-        if (c.moveToFirst()) {
-            do {
-                audioSchemes.add(c.getString(0));
-            } while (c.moveToNext());
+            Cursor c = mDB.query(DB.AUDIO_SCHEMES.TABLE, from, null, null, null, null,
+                    DB.AUDIO_SCHEMES.SORT_ORDER + " desc");
+            if (c.moveToFirst()) {
+                do {
+                    audioSchemes.add(c.getString(0));
+                } while (c.moveToNext());
+            }
+            c.close();
+        } catch (IllegalStateException ex) {
+            Log.e(getClass().getName(), "Query failed:", ex);
         }
-        c.close();
         this.notifyDataSetChanged();
     }
 }

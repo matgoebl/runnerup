@@ -17,12 +17,17 @@
 
 package org.runnerup.export;
 
-import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 import android.util.Pair;
+
+import androidx.annotation.ColorRes;
+import androidx.annotation.DrawableRes;
+import androidx.annotation.NonNull;
+import androidx.annotation.StringRes;
+import androidx.appcompat.app.AppCompatActivity;
 
 import org.runnerup.R;
 import org.runnerup.common.util.Constants;
@@ -60,17 +65,20 @@ public abstract class DefaultSynchronizer implements Synchronizer {
         return 0;
     }
 
+    @NonNull
     @Override
     public String getName() {
         return null;
     }
 
+    @DrawableRes
     @Override
     public int getIconId() {
         //0 is used if the resource id cannot be found
         return 0;
     }
 
+    @ColorRes
     @Override
     public int getColorId() {
         return R.color.serviceDefault;
@@ -82,13 +90,20 @@ public abstract class DefaultSynchronizer implements Synchronizer {
         //Other config can be retrieved from db in Upload()
     }
 
+    @NonNull
     @Override
-    public String getAuthConfig() {
-        return null;
-    }
+    public abstract String getAuthConfig();
 
-    public Intent getAuthIntent(Activity a) {
-        return null;
+    /**
+     * Must be implemented for AuthMethod.OAUTH2
+     * @param a
+     * @return
+     */
+    @NonNull
+    @Override
+    public Intent getAuthIntent(AppCompatActivity a) {
+        Log.e(getName(), "getAuthIntent: getAuthIntent must be implemented for OAUTH2");
+        return new Intent();
     }
 
     @Override
@@ -97,26 +112,28 @@ public abstract class DefaultSynchronizer implements Synchronizer {
     }
 
     @Override
-    public void reset() {
+    public void reset() {}
 
-    }
-
+    // Below are default empty methods from Synchronizer
+    @NonNull
     @Override
     public Status connect() {
-        return null;
+        return Status.OK;
     }
 
-    /** Below are default empty methods from Synchronizer */
+    @NonNull
     public Status getAuthResult(int resultCode, Intent data) {
         return Status.OK;
     }
 
+    @NonNull
     public Status upload(SQLiteDatabase db, long mID) {
         Status s = Status.ERROR;
         s.activityId = mID;
         return s;
     }
 
+    @NonNull
     public Status getExternalId(SQLiteDatabase db, Status uploadStatus) {
         return Status.ERROR;
     }
@@ -125,6 +142,7 @@ public abstract class DefaultSynchronizer implements Synchronizer {
         return false;
     }
 
+    @NonNull
     public Status listWorkouts(List<Pair<String, String>> list) {
         return Status.OK;
     }
@@ -132,11 +150,13 @@ public abstract class DefaultSynchronizer implements Synchronizer {
     public void downloadWorkout(File dst, String key) throws Exception {
     }
 
+    @NonNull
     @Override
     public Status listActivities(List<SyncActivityItem> list) {
         return Status.INCORRECT_USAGE;
     }
 
+    @NonNull
     @Override
     public final Status download(SQLiteDatabase db, SyncActivityItem item) {
         return persistActivity(db, download(item));
@@ -191,11 +211,14 @@ public abstract class DefaultSynchronizer implements Synchronizer {
         formValues.clear();
     }
 
+    @NonNull
     public Status getFeed(FeedUpdater feedUpdater) {
         return Status.OK;
     }
 
     @Override
+
+    @NonNull
     public Status refreshToken() {
         return Status.ERROR;
     }
@@ -245,8 +268,9 @@ public abstract class DefaultSynchronizer implements Synchronizer {
         return html;
     }
 
+    @StringRes
     @Override
-    public Integer getAuthNotice() {
+    public int getAuthNotice() {
         return 0;
     }
 

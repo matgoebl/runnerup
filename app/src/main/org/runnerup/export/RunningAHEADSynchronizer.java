@@ -17,11 +17,14 @@
 
 package org.runnerup.export;
 
-import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
+
+import androidx.annotation.ColorRes;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -64,7 +67,7 @@ public class RunningAHEADSynchronizer extends DefaultSynchronizer implements OAu
 
     private long id = 0;
     private String access_token = null;
-    private PathSimplifier simplifier;
+    private final PathSimplifier simplifier;
 
     RunningAHEADSynchronizer(SyncManager syncManager, PathSimplifier simplifier) {
         if (CLIENT_ID == null || CLIENT_SECRET == null) {
@@ -119,6 +122,7 @@ public class RunningAHEADSynchronizer extends DefaultSynchronizer implements OAu
         return id;
     }
 
+    @NonNull
     @Override
     public String getName() {
         return NAME;
@@ -129,6 +133,7 @@ public class RunningAHEADSynchronizer extends DefaultSynchronizer implements OAu
         return PUBLIC_URL;
     }
 
+    @ColorRes
     @Override
     public int getColorId() {return R.color.serviceRunningAhead;}
 
@@ -138,6 +143,7 @@ public class RunningAHEADSynchronizer extends DefaultSynchronizer implements OAu
         if (authConfig != null) {
             try {
                 JSONObject tmp = new JSONObject(authConfig);
+                //noinspection ConstantConditions
                 access_token = tmp.optString("access_token", null);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -146,6 +152,7 @@ public class RunningAHEADSynchronizer extends DefaultSynchronizer implements OAu
         id = config.getAsLong("_id");
     }
 
+    @NonNull
     @Override
     public String getAuthConfig() {
         JSONObject tmp = new JSONObject();
@@ -159,14 +166,16 @@ public class RunningAHEADSynchronizer extends DefaultSynchronizer implements OAu
 
     }
 
+    @NonNull
     @Override
-    public Intent getAuthIntent(Activity activity) {
+    public Intent getAuthIntent(AppCompatActivity activity) {
         return OAuth2Activity.getIntent(activity, this);
     }
 
+    @NonNull
     @Override
     public Status getAuthResult(int resultCode, Intent data) {
-        if (resultCode == Activity.RESULT_OK) {
+        if (resultCode == AppCompatActivity.RESULT_OK) {
             String authConfig = data.getStringExtra(DB.ACCOUNT.AUTH_CONFIG);
             try {
                 access_token = new JSONObject(authConfig).getString("access_token");
@@ -188,6 +197,7 @@ public class RunningAHEADSynchronizer extends DefaultSynchronizer implements OAu
         access_token = null;
     }
 
+    @NonNull
     @Override
     public Status connect() {
         Status s = Status.NEED_AUTH;
@@ -198,10 +208,12 @@ public class RunningAHEADSynchronizer extends DefaultSynchronizer implements OAu
         return Synchronizer.Status.OK;
     }
 
+    @NonNull
     @Override
     public Status upload(SQLiteDatabase db, final long mID) {
-        Status s;
-        if ((s = connect()) != Status.OK) {
+        Status s = connect();
+        s.activityId = mID;
+        if (s != Status.OK) {
             return s;
         }
 
@@ -264,12 +276,7 @@ public class RunningAHEADSynchronizer extends DefaultSynchronizer implements OAu
 
     @Override
     public boolean checkSupport(Synchronizer.Feature f) {
-        switch (f) {
-            case UPLOAD:
-                return true;
-            default:
-                return false;
-        }
+        return f == Feature.UPLOAD;
     }
 
     @Override

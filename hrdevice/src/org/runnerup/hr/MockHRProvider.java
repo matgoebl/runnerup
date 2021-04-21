@@ -1,11 +1,12 @@
 
 package org.runnerup.hr;
 
-import android.app.Activity;
 import android.content.Context;
 import android.os.Build;
 import android.os.Handler;
 import android.os.SystemClock;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 
 public class MockHRProvider implements HRProvider {
@@ -96,15 +97,12 @@ public class MockHRProvider implements HRProvider {
             return;
 
         mIsConnecting = true;
-        hrClientHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                if (mIsConnecting) {
-                    mIsConnected = true;
-                    mIsConnecting = false;
-                    hrClient.onConnectResult(true);
-                    hrClientHandler.postDelayed(hrUpdate, 750);
-                }
+        hrClientHandler.postDelayed(() -> {
+            if (mIsConnecting) {
+                mIsConnected = true;
+                mIsConnecting = false;
+                hrClient.onConnectResult(true);
+                hrClientHandler.postDelayed(hrUpdate, 750);
             }
         }, 3000);
     }
@@ -176,7 +174,7 @@ public class MockHRProvider implements HRProvider {
     }
 
     @Override
-    public boolean startEnableIntent(Activity activity, int requestCode) {
+    public boolean startEnableIntent(AppCompatActivity activity, int requestCode) {
         return false;
     }
 }

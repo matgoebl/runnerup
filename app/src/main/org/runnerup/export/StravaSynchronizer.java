@@ -17,13 +17,17 @@
 
 package org.runnerup.export;
 
-import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.text.TextUtils;
 import android.util.Log;
+
+import androidx.annotation.ColorRes;
+import androidx.annotation.DrawableRes;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -39,12 +43,8 @@ import org.runnerup.export.util.StringWritable;
 import org.runnerup.export.util.SyncHelper;
 import org.runnerup.workout.Sport;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -74,7 +74,7 @@ public class StravaSynchronizer extends DefaultSynchronizer implements OAuth2Ser
     private String access_token = null;
     private String refresh_token = null;
     private long access_expire = -1;
-    private PathSimplifier simplifier;
+    private final PathSimplifier simplifier;
 
     StravaSynchronizer(SyncManager syncManager, PathSimplifier simplifier) {
         if (CLIENT_ID == null || CLIENT_SECRET == null) {
@@ -134,6 +134,7 @@ public class StravaSynchronizer extends DefaultSynchronizer implements OAuth2Ser
         return id;
     }
 
+    @NonNull
     @Override
     public String getName() {
         return NAME;
@@ -144,8 +145,15 @@ public class StravaSynchronizer extends DefaultSynchronizer implements OAuth2Ser
         return PUBLIC_URL;
     }
 
+    @ColorRes
     @Override
     public int getColorId() {return R.color.serviceStrava;}
+
+    @DrawableRes
+    @Override
+    public int getIconId() {
+        return R.drawable.service_strava;
+    }
 
     @Override
     public void init(ContentValues config) {
@@ -161,6 +169,7 @@ public class StravaSynchronizer extends DefaultSynchronizer implements OAuth2Ser
         id = config.getAsLong("_id");
     }
 
+    @NonNull
     @Override
     public String getAuthConfig() {
         JSONObject tmp = new JSONObject();
@@ -176,14 +185,16 @@ public class StravaSynchronizer extends DefaultSynchronizer implements OAuth2Ser
 
     }
 
+    @NonNull
     @Override
-    public Intent getAuthIntent(Activity activity) {
+    public Intent getAuthIntent(AppCompatActivity activity) {
         return OAuth2Activity.getIntent(activity, this);
     }
 
+    @NonNull
     @Override
     public Status getAuthResult(int resultCode, Intent data) {
-        if (resultCode == Activity.RESULT_OK) {
+        if (resultCode == AppCompatActivity.RESULT_OK) {
             try {
                 String authConfig = data.getStringExtra(DB.ACCOUNT.AUTH_CONFIG);
                 JSONObject obj = new JSONObject(authConfig);
@@ -226,6 +237,7 @@ public class StravaSynchronizer extends DefaultSynchronizer implements OAuth2Ser
     }
 
 
+    @NonNull
     @Override
     public Status connect() {
         Status s = Status.OK;
@@ -248,6 +260,7 @@ public class StravaSynchronizer extends DefaultSynchronizer implements OAuth2Ser
         return s;
     }
 
+    @NonNull
     public Status refreshToken() {
         Status s;
 
@@ -342,6 +355,7 @@ public class StravaSynchronizer extends DefaultSynchronizer implements OAuth2Ser
         return compressed;
     }
 
+    @NonNull
     @Override
     public Status upload(SQLiteDatabase db, final long mID) {
         Status s = connect();
@@ -369,7 +383,7 @@ public class StravaSynchronizer extends DefaultSynchronizer implements OAuth2Ser
             filePart.setContentType("application/octet-stream");
             Part<StringWritable> activityTypePart = new Part<>("activity_type",
                     new StringWritable(dbInfo.stravaType));
-            Part<?> parts[] = {
+            Part<?>[] parts = {
                     dataTypePart, filePart, activityTypePart, null
             };
             if (!TextUtils.isEmpty(dbInfo.desc)) {
@@ -426,6 +440,7 @@ public class StravaSynchronizer extends DefaultSynchronizer implements OAuth2Ser
     /**
      * Strava processing
      */
+    @NonNull
     @Override
     public Status getExternalId(final SQLiteDatabase db, Status uploadStatus) {
         Status result = Status.ERROR;
@@ -483,12 +498,7 @@ public class StravaSynchronizer extends DefaultSynchronizer implements OAuth2Ser
 
     @Override
     public boolean checkSupport(Synchronizer.Feature f) {
-        switch (f) {
-            case UPLOAD:
-                return true;
-            default:
-                return false;
-        }
+        return f == Feature.UPLOAD;
     }
 
     @Override

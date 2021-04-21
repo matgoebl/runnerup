@@ -5,7 +5,8 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
-import android.support.v4.app.NotificationCompat;
+
+import androidx.core.app.NotificationCompat;
 
 import org.runnerup.R;
 import org.runnerup.common.util.Constants;
@@ -37,9 +38,9 @@ public class GpsBoundState implements NotificationState {
                 .setLocalOnly(true)
                 .addAction(R.drawable.ic_av_play_arrow, context.getString(R.string.Start),
                         pendingStart);
-        if (Build.VERSION.SDK_INT >= 21) {
-            builder.setVisibility(Notification.VISIBILITY_PUBLIC)
-                    .setCategory(Notification.CATEGORY_SERVICE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            builder.setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                    .setCategory(NotificationCompat.CATEGORY_SERVICE);
         }
 
         notification = builder.build();

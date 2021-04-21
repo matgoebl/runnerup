@@ -17,10 +17,8 @@
 package org.runnerup.tracker.component;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.speech.tts.TextToSpeech;
 
-import org.runnerup.R;
 import org.runnerup.workout.Workout;
 import org.runnerup.workout.feedback.RUTextToSpeech;
 
@@ -30,7 +28,6 @@ import java.util.HashMap;
 public class TrackerTTS extends DefaultTrackerComponent {
 
     private TextToSpeech tts;
-    private Context context;
 
     private static final String NAME = "TTS";
 
@@ -39,18 +36,16 @@ public class TrackerTTS extends DefaultTrackerComponent {
         return NAME;
     }
 
+    private RUTextToSpeech rutts;
+
     @Override
     public ResultCode onInit(final Callback callback, final Context context) {
-        this.context = context;
-        tts = new TextToSpeech(context, new TextToSpeech.OnInitListener() {
-            @Override
-            public void onInit(int status) {
-                if (status == TextToSpeech.SUCCESS) {
-                    callback.run(TrackerTTS.this, ResultCode.RESULT_OK);
-                }
-                else {
-                    callback.run(TrackerTTS.this, ResultCode.RESULT_ERROR);
-                }
+        tts = new TextToSpeech(context, status -> {
+            if (status == TextToSpeech.SUCCESS) {
+                callback.run(TrackerTTS.this, ResultCode.RESULT_OK);
+            }
+            else {
+                callback.run(TrackerTTS.this, ResultCode.RESULT_ERROR);
             }
         });
         return ResultCode.RESULT_PENDING;
@@ -60,7 +55,15 @@ public class TrackerTTS extends DefaultTrackerComponent {
     public void onBind(HashMap<String, Object> bindValues) {
         Context ctx = (Context) bindValues.get(TrackerComponent.KEY_CONTEXT);
         Boolean mute = (Boolean) bindValues.get(Workout.KEY_MUTE);
-        bindValues.put(Workout.KEY_TTS, new RUTextToSpeech(tts, mute, ctx));
+
+        rutts = new RUTextToSpeech(tts, mute, ctx);
+
+        bindValues.put(Workout.KEY_TTS, rutts);
+    }
+
+    @Override
+    public boolean isConnected() {
+        return rutts != null && rutts.isAvailable();
     }
 
     @Override

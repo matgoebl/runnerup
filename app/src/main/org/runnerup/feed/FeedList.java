@@ -27,7 +27,6 @@ import org.runnerup.db.DBHelper;
 
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Observable;
@@ -58,8 +57,14 @@ public class FeedList extends Observable implements Constants {
 
     public void load() {
         list.clear();
-        Cursor c = mDB.query(DB.FEED.TABLE, null, null, null, null, null, DB.FEED.START_TIME
-                + " desc", Integer.toString(MAX_ITEMS));
+        final Cursor c;
+        try {
+            c = mDB.query(DB.FEED.TABLE, null, null, null, null, null, DB.FEED.START_TIME
+                    + " desc", Integer.toString(MAX_ITEMS));
+        } catch (IllegalStateException ex) {
+            Log.e(getClass().getName(), "Query failed:", ex);
+            return;
+        }
         if (c.moveToFirst()) {
             do {
                 list.add(DBHelper.get(c));
@@ -87,8 +92,8 @@ public class FeedList extends Observable implements Constants {
     }
 
     public class FeedUpdater {
-        List<ContentValues> currList = null;
-        List<ContentValues> addList = null;
+        final List<ContentValues> currList;
+        final List<ContentValues> addList;
         String synchronizer = null;
         int added = 0;
         int discarded = 0;
@@ -262,7 +267,7 @@ public class FeedList extends Observable implements Constants {
 
         final boolean print = false; // enable printout of match failure
 
-        String keys[] = {
+        String[] keys = {
                 DB.FEED.FEED_TYPE,
                 DB.FEED.FEED_SUBTYPE,
                 DB.FEED.FEED_TYPE_STRING,
@@ -389,18 +394,15 @@ public class FeedList extends Observable implements Constants {
     }
 
     public static void sort(List<ContentValues> list) {
-        java.util.Collections.sort(list, new Comparator<ContentValues>() {
-            @Override
-            public int compare(ContentValues lhs, ContentValues rhs) {
-                long t1 = lhs.getAsLong(DB.FEED.START_TIME);
-                long t2 = rhs.getAsLong(DB.FEED.START_TIME);
-                if (t1 < t2) {
-                    return +1;
-                } else if (t1 > t2) {
-                    return -1;
-                }
-                return 0;
+        java.util.Collections.sort(list, (lhs, rhs) -> {
+            long t1 = lhs.getAsLong(DB.FEED.START_TIME);
+            long t2 = rhs.getAsLong(DB.FEED.START_TIME);
+            if (t1 < t2) {
+                return +1;
+            } else if (t1 > t2) {
+                return -1;
             }
+            return 0;
         });
 
     }

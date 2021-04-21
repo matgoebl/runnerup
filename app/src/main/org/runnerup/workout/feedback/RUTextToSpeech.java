@@ -37,7 +37,7 @@ import java.util.Locale;
 public class RUTextToSpeech {
 
     private static final String UTTERANCE_ID = "RUTextTospeech";
-    private boolean mute = false;
+    private final boolean mute;
     private final TextToSpeech textToSpeech;
     private final AudioManager audioManager;
     private long id = (long) (System.nanoTime() + (1000 * Math.random()));
@@ -87,11 +87,18 @@ public class RUTextToSpeech {
             val = this.id;
             this.id++;
         }
-        return UTTERANCE_ID + Long.toString(val);
+        return UTTERANCE_ID + val;
+    }
+
+    public Boolean isAvailable() {
+        return textToSpeech != null;
     }
 
     @SuppressWarnings("UnusedReturnValue")
     int speak(String text, int queueMode, HashMap<String, String> params) {
+        if (!isAvailable()) {
+            return 0;
+        }
 
         final boolean trace = true;
         if (queueMode == TextToSpeech.QUEUE_FLUSH) {
@@ -135,6 +142,10 @@ public class RUTextToSpeech {
      */
     private int speakWithMute(String text, int queueMode,
             HashMap<String, String> params) {
+        if (!isAvailable()) {
+            return TextToSpeech.ERROR;
+        }
+
         if (requestFocus()) {
             final String utId = getId(text);
             outstanding.add(utId);
@@ -174,6 +185,9 @@ public class RUTextToSpeech {
     }
 
     public void emit() {
+        if (!isAvailable()) {
+            return;
+        }
         if (cueSet.isEmpty()) {
             return;
         }
@@ -212,7 +226,6 @@ public class RUTextToSpeech {
 class UtteranceCompletion {
 
     @SuppressLint("ObsoleteSdkInt")
-    @SuppressWarnings("deprecation")
     public static void setUtteranceCompletedListener(
             TextToSpeech tts, final RUTextToSpeech ruTextToSpeech) {
         tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {

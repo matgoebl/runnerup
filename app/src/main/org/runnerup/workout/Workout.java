@@ -18,17 +18,17 @@
 package org.runnerup.workout;
 
 import android.content.ContentValues;
-import android.content.SharedPreferences;
 import android.location.Location;
+import android.util.Log;
 
 import org.runnerup.BuildConfig;
 import org.runnerup.common.util.Constants;
 import org.runnerup.common.util.Constants.DB;
 import org.runnerup.tracker.Tracker;
-import org.runnerup.tracker.component.TrackerHRM;
 import org.runnerup.tracker.component.TrackerCadence;
-import org.runnerup.tracker.component.TrackerTemperature;
+import org.runnerup.tracker.component.TrackerHRM;
 import org.runnerup.tracker.component.TrackerPressure;
+import org.runnerup.tracker.component.TrackerTemperature;
 import org.runnerup.util.HRZones;
 import org.runnerup.workout.feedback.RUTextToSpeech;
 
@@ -71,8 +71,8 @@ public class Workout implements WorkoutComponent, WorkoutInfo {
             try {
                 f.emit(Workout.this, tracker.getApplicationContext());
             } catch (Exception ex) {
-                // make sure that no small misstake crashes a workout...
-                ex.printStackTrace();
+                // make sure that no small mistake crashes a workout...
+                Log.w(getClass().getName(), "PendingFeedback:add: " + ex.toString());
             }
         }
 
@@ -84,8 +84,8 @@ public class Workout implements WorkoutComponent, WorkoutInfo {
                 try {
                     Workout.this.textToSpeech.emit();
                 } catch (Exception ex) {
-                    // make sure that no small misstake crashes a workout...
-                    ex.printStackTrace();
+                    // make sure that no small mistake crashes a workout...
+                    Log.w(getClass().getName(), "PendingFeedback:end: " + ex.toString());
                 }
                 return true;
             }
@@ -96,7 +96,6 @@ public class Workout implements WorkoutComponent, WorkoutInfo {
     private final PendingFeedback pendingFeedback = new PendingFeedback();
 
     Tracker tracker = null;
-    SharedPreferences audioCuePrefs;
     private HRZones hrZones = null;
     private RUTextToSpeech textToSpeech = null;
 
@@ -260,6 +259,10 @@ public class Workout implements WorkoutComponent, WorkoutInfo {
         }
         emitFeedback();
         paused = false;
+        if (tracker == null) {
+            // Taskkiller?
+            return;
+        }
         tracker.displayNotificationState();
     }
 
@@ -274,6 +277,10 @@ public class Workout implements WorkoutComponent, WorkoutInfo {
     }
 
     public void onSave() {
+        if (tracker == null) {
+            // Taskkiller?
+            return;
+        }
         tracker.completeActivity(true);
     }
 
@@ -318,7 +325,10 @@ public class Workout implements WorkoutComponent, WorkoutInfo {
     public double getDistance(Scope scope) {
         switch (scope) {
             case ACTIVITY:
-                return tracker.getDistance();
+                if (tracker != null) {
+                    return tracker.getDistance();
+                }
+                break;
             case STEP:
             case LAP:
                 if (currentStep != null)
@@ -335,7 +345,10 @@ public class Workout implements WorkoutComponent, WorkoutInfo {
     public double getTime(Scope scope) {
         switch (scope) {
             case ACTIVITY:
-                return tracker.getTimeMs() / 1000.0d;
+                if (tracker != null) {
+                    return tracker.getTimeMs() / 1000.0d;
+                }
+                break;
             case STEP:
             case LAP:
                 if (currentStep != null)
@@ -356,7 +369,7 @@ public class Workout implements WorkoutComponent, WorkoutInfo {
                 double d = getDistance(scope);
                 double t = getTime(scope);
                 if (t == 0)
-                    return (double) 0;
+                    return 0;
                 return d / t;
             case STEP:
             case LAP:
@@ -364,10 +377,12 @@ public class Workout implements WorkoutComponent, WorkoutInfo {
                     return currentStep.getSpeed(this, scope);
                 break;
             case CURRENT:
-                Double s = tracker.getCurrentSpeed();
-                if (s != null)
-                    return s;
-                return 0;
+                if (tracker != null) {
+                    Double s = tracker.getCurrentSpeed();
+                    if (s != null)
+                        return s;
+                }
+                break;
         }
         return 0;
     }
@@ -402,7 +417,10 @@ public class Workout implements WorkoutComponent, WorkoutInfo {
     double getHeartbeats(Scope scope) {
         switch (scope) {
             case ACTIVITY:
-                return tracker.getHeartbeats();
+                if (tracker != null) {
+                    return tracker.getHeartbeats();
+                }
+                break;
             case STEP:
             case LAP:
                 if (currentStep != null)
@@ -417,12 +435,13 @@ public class Workout implements WorkoutComponent, WorkoutInfo {
     @Override
     public double getHeartRate(Scope scope) {
         switch (scope) {
-            case CURRENT: {
-                Integer val = tracker.getCurrentHRValue();
-                if (val == null)
-                    return 0;
-                return val;
-            }
+            case CURRENT:
+                if (tracker != null) {
+                    Integer val = tracker.getCurrentHRValue();
+                    if (val != null)
+                        return val;
+                }
+                return 0;
             case LAP:
             case STEP:
             case ACTIVITY:
@@ -442,11 +461,12 @@ public class Workout implements WorkoutComponent, WorkoutInfo {
     @Override
     public double getCadence(Scope scope) {
         switch (scope) {
-            case CURRENT: {
-                Float val = tracker.getCurrentCadence();
-                if (val == null)
-                    return 0; //TODO should not be used
-                return val;
+            case CURRENT:
+                if (tracker != null) {
+                    Float val = tracker.getCurrentCadence();
+                    if (val != null)
+                        return val;
+                return 0;
             }
             case LAP:
             case STEP:
@@ -468,12 +488,13 @@ public class Workout implements WorkoutComponent, WorkoutInfo {
     @Override
     public double getTemperature(Scope scope) {
         switch (scope) {
-            case CURRENT: {
-                Float val = tracker.getCurrentTemperature();
-                if (val == null)
-                    return -1;  //TODO should not be used
-                return val;
-            }
+            case CURRENT:
+                if (tracker != null) {
+                    Float val = tracker.getCurrentTemperature();
+                    if (val != null)
+                        return val;
+                }
+                return -1;
             case LAP:
             case STEP:
             case ACTIVITY:
@@ -488,12 +509,13 @@ public class Workout implements WorkoutComponent, WorkoutInfo {
     @Override
     public double getPressure(Scope scope) {
         switch (scope) {
-            case CURRENT: {
-                Float val = tracker.getCurrentPressure();
-                if (val == null)
-                    return -1;  //TODO should not be used
-                return val;
-            }
+            case CURRENT:
+                if (tracker != null) {
+                    Float val = tracker.getCurrentPressure();
+                    if (val != null)
+                        return val;
+                }
+                return -1;
             case LAP:
             case STEP:
             case ACTIVITY:
@@ -525,13 +547,15 @@ public class Workout implements WorkoutComponent, WorkoutInfo {
 
     @Override
     public boolean isEnabled(Dimension dim, Scope scope) {
+        if (tracker == null) {
+            return false;
+        }
         if (dim == Dimension.HR) {
             return tracker.isComponentConnected(TrackerHRM.NAME);
         } else if (dim == Dimension.HRZ) {
-            if (hrZones == null ||
-                    !hrZones.isConfigured() ||
-                    !tracker.isComponentConnected(TrackerHRM.NAME))
-                return false;
+            return hrZones != null &&
+                    hrZones.isConfigured() &&
+                    tracker.isComponentConnected(TrackerHRM.NAME);
         } else if (dim == Dimension.CAD) {
             return tracker.isComponentConnected(TrackerCadence.NAME);
         } else if (dim == Dimension.TEMPERATURE) {
@@ -661,7 +685,7 @@ public class Workout implements WorkoutComponent, WorkoutInfo {
                 case LAP:
                     return (/* 1* */ 60 + 5 * 60 * Math.random());
                 case CURRENT:
-                    return System.currentTimeMillis() / 1000;
+                    return System.currentTimeMillis() / 1000.0;
             }
             return 0;
         }

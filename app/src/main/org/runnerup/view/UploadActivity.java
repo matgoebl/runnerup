@@ -23,8 +23,6 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -33,11 +31,13 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.content.res.AppCompatResources;
 
 import org.runnerup.R;
 import org.runnerup.common.util.Constants;
@@ -89,23 +89,23 @@ public class UploadActivity extends AppCompatActivity implements Constants {
         formatter = new Formatter(this);
         syncManager = new SyncManager(this);
 
-        listView = (ListView) findViewById(R.id.upload_list);
+        listView = findViewById(R.id.upload_view);
         listView.setDividerHeight(1);
         listView.setAdapter(new UploadListAdapter(this));
 
         {
-            Button btn = (Button) findViewById(R.id.account_upload_set_all);
+            Button btn = findViewById(R.id.upload_account_set_all);
             btn.setOnClickListener(setAllButtonClick);
         }
 
         {
-            Button btn = (Button) findViewById(R.id.account_upload_clear_all);
+            Button btn = findViewById(R.id.upload_account_clear_all);
             btn.setOnClickListener(clearAllButtonClick);
         }
 
         {
-            Button dwbtn = (Button) findViewById(R.id.account_download_button);
-            Button upbtn = (Button) findViewById(R.id.account_upload_button);
+            Button dwbtn = findViewById(R.id.upload_account_download_button);
+            Button upbtn = findViewById(R.id.upload_account_button);
             if (syncMode.equals(SyncManager.SyncMode.DOWNLOAD)) {
                 dwbtn.setOnClickListener(downloadButtonClick);
                 actionButton = dwbtn;
@@ -124,8 +124,8 @@ public class UploadActivity extends AppCompatActivity implements Constants {
             // synchronizer initialized in fillData() for DOWNLOAD only
             Synchronizer synchronizer = syncManager.getSynchronizerByName(mSynchronizerName);
 
-            TextView tv = (TextView) findViewById(R.id.account_upload_list_name);
-            ImageView im = (ImageView) findViewById(R.id.account_upload_list_icon);
+            TextView tv = findViewById(R.id.upload_account_list_name);
+            ImageView im = findViewById(R.id.upload_account_list_icon);
             if (synchronizer == null || synchronizer.getIconId() == 0) {
                 im.setVisibility(View.GONE);
                 tv.setText(mSynchronizerName);
@@ -133,7 +133,7 @@ public class UploadActivity extends AppCompatActivity implements Constants {
             } else {
                 im.setVisibility(View.VISIBLE);
                 tv.setVisibility(View.GONE);
-                im.setImageDrawable(ContextCompat.getDrawable(this, synchronizer.getIconId()));
+                im.setImageDrawable(AppCompatResources.getDrawable(this, synchronizer.getIconId()));
             }
         }
     }
@@ -160,12 +160,9 @@ public class UploadActivity extends AppCompatActivity implements Constants {
     private void fillData() {
         if (syncMode.equals(SyncManager.SyncMode.DOWNLOAD)) {
             syncManager.load(mSynchronizerName);
-            syncManager.loadActivityList(allSyncActivities, mSynchronizerName, new SyncManager.Callback() {
-                @Override
-                public void run(String synchronizerName, Status status) {
-                    filterAlreadyPresentActivities();
-                    requery();
-                }
+            syncManager.loadActivityList(allSyncActivities, mSynchronizerName, (synchronizerName, status) -> {
+                filterAlreadyPresentActivities();
+                requery();
             });
         } else {
             // Fields from the database (projection)
@@ -173,7 +170,7 @@ public class UploadActivity extends AppCompatActivity implements Constants {
                     DB.PRIMARY_KEY, DB.ACTIVITY.START_TIME,
                     DB.ACTIVITY.DISTANCE, DB.ACTIVITY.TIME, DB.ACTIVITY.SPORT
             };
-            String args[] = {
+            String[] args = {
                     mSynchronizerName
             };
             final String w = "NOT EXISTS (SELECT 1 FROM " + DB.EXPORT.TABLE + " r," +
@@ -258,16 +255,12 @@ public class UploadActivity extends AppCompatActivity implements Constants {
         }
     }
 
-    private final OnClickListener onActivityClick = new OnClickListener() {
-
-        @Override
-        public void onClick(View arg0) {
-            long id = ((UploadListAdapter.ViewHolderUploadActivity) arg0.getTag()).activityID;
-            Intent intent = new Intent(UploadActivity.this, DetailActivity.class);
-            intent.putExtra("ID", id);
-            intent.putExtra("mode", "details");
-            startActivityForResult(intent, 100);
-        }
+    private final OnClickListener onActivityClick = arg0 -> {
+        long id = ((UploadListAdapter.ViewHolderUploadActivity) arg0.getTag()).activityID;
+        Intent intent = new Intent(UploadActivity.this, DetailActivity.class);
+        intent.putExtra("ID", id);
+        intent.putExtra("mode", "details");
+        startActivityForResult(intent, 100);
     };
 
     class UploadListAdapter extends BaseAdapter {
@@ -314,12 +307,12 @@ public class UploadActivity extends AppCompatActivity implements Constants {
                 viewHolder = new ViewHolderUploadActivity();
 
                 view = inflater.inflate(R.layout.upload_row, parent, false);
-                viewHolder.tvStartTime = (TextView) view.findViewById(R.id.upload_list_start_time);
-                viewHolder.tvDistance = (TextView) view.findViewById(R.id.upload_list_distance);
-                viewHolder.tvTime = (TextView) view.findViewById(R.id.upload_list_time);
-                viewHolder.tvPace = (TextView) view.findViewById(R.id.upload_list_pace);
-                viewHolder.tvSport = (TextView) view.findViewById(R.id.upload_list_sport);
-                viewHolder.cb = (CheckBox) view.findViewById(R.id.upload_list_check);
+                viewHolder.tvStartTime = view.findViewById(R.id.upload_list_start_time);
+                viewHolder.tvDistance = view.findViewById(R.id.upload_list_distance);
+                viewHolder.tvTime = view.findViewById(R.id.upload_list_time);
+                viewHolder.tvPace = view.findViewById(R.id.upload_list_pace);
+                viewHolder.tvSport = view.findViewById(R.id.upload_list_sport);
+                viewHolder.cb = view.findViewById(R.id.upload_list_check);
 
                 view.setTag(viewHolder);
             } else {
@@ -382,17 +375,12 @@ public class UploadActivity extends AppCompatActivity implements Constants {
         }
     }
 
-    private final OnCheckedChangeListener checkedChangeClick = new OnCheckedChangeListener() {
-
-        @Override
-        public void onCheckedChanged(CompoundButton arg0, boolean arg1) {
-            int pos = (Integer) arg0.getTag();
-            SyncActivityItem tmp = allSyncActivities.get(pos);
-            tmp.setSkipFlag(!arg1);
-            updateSyncCount();
-            requery();
-        }
-
+    private final OnCheckedChangeListener checkedChangeClick = (arg0, arg1) -> {
+        int pos = (Integer) arg0.getTag();
+        SyncActivityItem tmp = allSyncActivities.get(pos);
+        tmp.setSkipFlag(!arg1);
+        updateSyncCount();
+        requery();
     };
 
     private final OnClickListener uploadButtonClick = new OnClickListener() {
@@ -434,56 +422,47 @@ public class UploadActivity extends AppCompatActivity implements Constants {
         return selected;
     }
 
-    private final SyncManager.Callback syncCallback = new SyncManager.Callback() {
-
-        @Override
-        public void run(String synchronizerName, Status status) {
-            fetching = false;
-            if (cancelSync.length() > 0 || status == Status.CANCEL) {
-                finish();
-                return;
-            }
-            if (syncMode.equals(SyncManager.SyncMode.UPLOAD)) {
-                fillData();
-            } else {
-                filterAlreadyPresentActivities();
-                requery();
-            }
+    private final SyncManager.Callback syncCallback = (synchronizerName, status) -> {
+        fetching = false;
+        if (cancelSync.length() > 0 || status == Status.CANCEL) {
+            finish();
+            return;
         }
-    };
-
-    private final OnClickListener clearAllButtonClick = new OnClickListener() {
-        @Override
-        public void onClick(View v) {
-            for (SyncActivityItem tmp : allSyncActivities) {
-                if (tmp.isRelevantForSynch(syncMode)) {
-                    tmp.setSkipFlag(Boolean.TRUE);
-                }
-            }
-            updateSyncCount();
+        if (syncMode.equals(SyncManager.SyncMode.UPLOAD)) {
+            fillData();
+        } else {
+            filterAlreadyPresentActivities();
             requery();
         }
     };
 
-    private final OnClickListener setAllButtonClick = new OnClickListener() {
-        @Override
-        public void onClick(View v) {
-            int i = 0;
-            final int maxUpload = 30;
-            for (SyncActivityItem ai : allSyncActivities) {
-                if (ai.isRelevantForSynch(syncMode)) {
-                    // Limit uploads by default, to not overload services (even if action is not all)
-                    Boolean upload = mSynchronizerName.contentEquals(FileSynchronizer.NAME) ||
-                            i++ < maxUpload;
-                    ai.setSkipFlag(!upload);
-                }
+    private final OnClickListener clearAllButtonClick = v -> {
+        for (SyncActivityItem tmp : allSyncActivities) {
+            if (tmp.isRelevantForSynch(syncMode)) {
+                tmp.setSkipFlag(Boolean.TRUE);
             }
-            updateSyncCount();
-            requery();
         }
+        updateSyncCount();
+        requery();
+    };
+
+    private final OnClickListener setAllButtonClick = v -> {
+        int i = 0;
+        final int maxUpload = 30;
+        for (SyncActivityItem ai : allSyncActivities) {
+            if (ai.isRelevantForSynch(syncMode)) {
+                // Limit uploads by default, to not overload services (even if action is not all)
+                Boolean upload = mSynchronizerName.contentEquals(FileSynchronizer.NAME) ||
+                        i++ < maxUpload;
+                ai.setSkipFlag(!upload);
+            }
+        }
+        updateSyncCount();
+        requery();
     };
 
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
         fillData();
     }
 }

@@ -1,6 +1,5 @@
 apply plugin: 'com.android.application'
 
-
 android {
     compileSdkVersion rootProject.ext.compileSdkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
@@ -9,7 +8,7 @@ android {
         minSdkVersion 23
         targetSdkVersion rootProject.ext.compileSdkVersion
         versionName rootProject.ext.versionName
-        versionCode rootProject.ext.versionCode
+        versionCode rootProject.ext.latestBaseVersionCode + rootProject.ext.versionCode
     }
 
     dexOptions {
@@ -54,7 +53,12 @@ repositories {
 dependencies {
     implementation project(':common')
 
+    implementation "androidx.annotation:annotation:${rootProject.ext.annotation_version}"
+
     implementation "com.google.android.support:wearable:${rootProject.ext.googleWearVersion}"
+    compileOnly "com.google.android.wearable:wearable:${rootProject.ext.googleWearVersion}"
+    // Wear requires rewrite to update Play services
+    //noinspection GradleDependency
     implementation "com.google.android.gms:play-services-wearable:${rootProject.ext.googlePlayServicesVersion}"
 }
 

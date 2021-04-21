@@ -18,20 +18,12 @@
 package org.runnerup.db;
 
 import android.content.ContentValues;
-import android.content.Context;
-import android.content.SharedPreferences;
-import android.content.res.Resources;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.location.Location;
-import android.preference.PreferenceManager;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.goebl.simplify.PointExtractor;
-import com.goebl.simplify.Simplify;
-
-import org.runnerup.R;
 import org.runnerup.common.util.Constants;
 
 import java.util.ArrayList;
@@ -172,18 +164,23 @@ public class ActivityCleaner implements Constants {
     }
 
     public void conditionalRecompute(SQLiteDatabase db){
-        // get last activity
-        long id = db.compileStatement("SELECT MAX(_id) FROM " + DB.ACTIVITY.TABLE).simpleQueryForLong();
+        try {
+            // get last activity
+            long id = db.compileStatement("SELECT MAX(_id) FROM " + DB.ACTIVITY.TABLE).simpleQueryForLong();
 
-        // check its TIME field - recompute if it isn't set
-        String[] cols = new String[]{DB.ACTIVITY.TIME};
-        Cursor c = db.query(DB.ACTIVITY.TABLE, cols, "_id = " + id, null, null, null, null);
-        if (c.moveToFirst()) {
-            if (c.isNull(0)) {
-                recompute(db, id);
+            // check its TIME field - recompute if it isn't set
+            String[] cols = new String[]{DB.ACTIVITY.TIME};
+            Cursor c = db.query(DB.ACTIVITY.TABLE, cols, "_id = " + id, null, null, null, null);
+            if (c.moveToFirst()) {
+                if (c.isNull(0)) {
+                    recompute(db, id);
+                }
             }
+            c.close();
         }
-        c.close();
+        catch (IllegalStateException e){
+            Log.e(getClass().getName(), "conditionalRecompute: " + e.getMessage());
+        }
     }
 
     public void recompute(SQLiteDatabase db, long activityId) {
@@ -237,7 +234,7 @@ public class ActivityCleaner implements Constants {
                 + " and " + DB.LOCATION.LAP + " = " + lap,
                 null, null, null, "_id", null);
         if (c.moveToFirst()) {
-            Location p[] = {
+            Location[] p = {
                     null, null
             };
             do {

@@ -42,10 +42,12 @@
     <item>العَرَبِيَّة‎‎</item>
     <item>Bahasa Indonesia</item>
     <item>Català</item>
+    <item>Čeština</item>
     <item>Deutsch</item>
     <item>Español</item>
     <item>زبان فارسی</item>
     <item>Français</item>
+    <item>עברית</item>
     <item>Italiano</item>
     <item>日本語</item>
     <item>Lietuvių</item>
@@ -55,20 +57,25 @@
     <item>Polski</item>
     <item>Português</item>
     <item>Русский</item>
+    <item>Română</item>
     <item>Suomi</item>
     <item>Svenska</item>
     <item>Türkçe</item>
+    <item>Українська мова</item>
+    <item>简体中文</item>
   </string-array>
   <!--Note: keep in same order as languagesNames-->
   <string-array name="cueLanguageCodes" translatable="false">
     <item>en</item>
     <item>ar</item>
-    <item>id</item>
+    <item>in</item>
     <item>ca</item>
+    <item>cs</item>
     <item>de</item>
     <item>es</item>
     <item>fa</item>
     <item>fr</item>
+    <item>iw</item>
     <item>it</item>
     <item>ja</item>
     <item>lt</item>
@@ -78,8 +85,11 @@
     <item>pl</item>
     <item>pt</item>
     <item>ru</item>
+    <item>ro</item>
     <item>fi</item>
     <item>sv</item>
     <item>tr</item>
-   </string-array>
+    <item>uk</item>
+    <item>zh</item>
+  </string-array>
 </resources>

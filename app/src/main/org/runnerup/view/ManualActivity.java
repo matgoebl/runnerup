@@ -21,7 +21,6 @@ import android.content.ContentValues;
 import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -29,13 +28,15 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 
+import androidx.appcompat.app.AppCompatActivity;
+
 import org.runnerup.R;
 import org.runnerup.common.util.Constants.DB;
 import org.runnerup.db.DBHelper;
 import org.runnerup.util.Formatter;
 import org.runnerup.util.SafeParse;
-import org.runnerup.widget.TitleSpinner;
 import org.runnerup.widget.SpinnerInterface.OnSetValueListener;
+import org.runnerup.widget.TitleSpinner;
 
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -68,16 +69,16 @@ public class ManualActivity extends AppCompatActivity {
 
         setContentView(R.layout.manual);
 
-        manualSport = (TitleSpinner) findViewById(R.id.manual_sport);
-        manualDate = (TitleSpinner) findViewById(R.id.manual_date);
-        manualTime = (TitleSpinner) findViewById(R.id.manual_time);
-        manualDistance = (TitleSpinner) findViewById(R.id.manual_distance);
+        manualSport = findViewById(R.id.manual_sport);
+        manualDate = findViewById(R.id.manual_date);
+        manualTime = findViewById(R.id.manual_time);
+        manualDistance = findViewById(R.id.manual_distance);
         manualDistance.setOnSetValueListener(onSetManualDistance);
-        manualDuration = (TitleSpinner) findViewById(R.id.manual_duration);
+        manualDuration = findViewById(R.id.manual_duration);
         manualDuration.setOnSetValueListener(onSetManualDuration);
-        manualPace = (TitleSpinner) findViewById(R.id.manual_pace);
+        manualPace = findViewById(R.id.manual_pace);
         manualPace.setVisibility(View.GONE);
-        manualNotes = (EditText) findViewById(R.id.manual_notes);
+        manualNotes = findViewById(R.id.manual_notes);
     }
 
     @Override
@@ -89,10 +90,9 @@ public class ManualActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.menu_save:
-                saveEntry();
-                return true;
+        if (item.getItemId() == R.id.menu_save) {
+            saveEntry();
+            return true;
         }
         return super.onOptionsItemSelected(item);
     }
@@ -105,6 +105,7 @@ public class ManualActivity extends AppCompatActivity {
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {//todo is this log needed?
+        super.onActivityResult(requestCode, resultCode, data);
         if (data != null) {
             if (data.getStringExtra("url") != null)
                 Log.e(getClass().getName(), "data.getStringExtra(\"url\") => " + data.getStringExtra("url"));

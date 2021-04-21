@@ -66,10 +66,10 @@ public final class SyncHelper {
         }
     }
 
-    public static void postMulti(HttpURLConnection conn, Part<?> parts[]) throws IOException {
+    public static void postMulti(HttpURLConnection conn, Part<?>[] parts) throws IOException {
         String lineEnd = "\r\n";
         String twoHyphens = "--";
-        String boundary = "*****" + Long.toString(System.currentTimeMillis())
+        String boundary = "*****" + System.currentTimeMillis()
                 + "*****";
         conn.setRequestProperty("Content-Type",
                 "multipart/form-data; boundary=" + boundary);
@@ -153,7 +153,7 @@ public final class SyncHelper {
     }
 
     public static JSONObject parse(HttpURLConnection conn, String name) throws IOException, JSONException {
-        JSONObject obj = null;
+        JSONObject obj;
         try {
             BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
             obj = SyncHelper.parse(in);

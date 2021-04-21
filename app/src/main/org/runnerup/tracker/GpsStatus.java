@@ -26,9 +26,12 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.os.Bundle;
-import android.support.v4.content.ContextCompat;
+
+import androidx.core.content.ContextCompat;
 
 import org.runnerup.util.TickListener;
+
+import java.util.Objects;
 
 /**
  *
@@ -44,8 +47,8 @@ public class GpsStatus implements LocationListener,
     private static final int HIST_LEN = 3;
 
     private boolean mIsFixed = false;
-    private Context context = null;
-    private Location[] mHistory = null;
+    private final Context context;
+    private final Location[] mHistory;
     private LocationManager locationManager = null;
     private TickListener listener = null;
 
@@ -84,7 +87,7 @@ public class GpsStatus implements LocationListener,
                 == PackageManager.PERMISSION_GRANTED) {
             LocationManager lm = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
             try {
-                lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
+                Objects.requireNonNull(lm).requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
             } catch (Exception ex) {
                 lm = null;
             }
@@ -214,6 +217,6 @@ public class GpsStatus implements LocationListener,
     public boolean isEnabled() {
         LocationManager lm = (LocationManager) context
                 .getSystemService(Context.LOCATION_SERVICE);
-        return lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
+        return Objects.requireNonNull(lm).isProviderEnabled(LocationManager.GPS_PROVIDER);
     }
 }

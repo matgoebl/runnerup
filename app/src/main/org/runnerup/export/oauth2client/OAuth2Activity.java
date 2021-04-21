@@ -18,14 +18,12 @@
 package org.runnerup.export.oauth2client;
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.view.Window;
@@ -33,6 +31,8 @@ import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 import org.runnerup.R;
 import org.runnerup.common.util.Constants.DB;
@@ -78,7 +78,6 @@ public class OAuth2Activity extends AppCompatActivity {
     private ProgressDialog mSpinner = null;
     private Bundle mArgs = null;
 
-    @SuppressWarnings("deprecation")
     private void setSavedPassword(WebView wv, boolean val) {
         wv.getSettings().setSavePassword(false);
     }
@@ -100,7 +99,14 @@ public class OAuth2Activity extends AppCompatActivity {
         mSpinner.requestWindowFeature(Window.FEATURE_NO_TITLE);
         mSpinner.setMessage(getString(R.string.Loading));
         
-        final WebView wv = new WebView(this);
+        // https://stackoverflow.com/questions/41025200/android-view-inflateexception-error-inflating-class-android-webkit-webview/58131421#58131421
+        WebView wvt;
+        try {
+            wvt = new WebView(this);
+        } catch (Exception e) {
+            wvt = new WebView(getApplicationContext());
+        }
+        final WebView wv = wvt;
         wv.setVerticalScrollBarEnabled(false);
         wv.setHorizontalScrollBarEnabled(false);
         wv.getSettings().setJavaScriptEnabled(true);
@@ -145,7 +151,6 @@ public class OAuth2Activity extends AppCompatActivity {
                     mSpinner.show();
             }
 
-
             // TODO: Fix "WrongThread"
             @SuppressLint({"StaticFieldLeak", "WrongThread"})
             @Override
@@ -163,7 +168,7 @@ public class OAuth2Activity extends AppCompatActivity {
                 if (url.startsWith(mRedirectUri)) {
                     Uri u = Uri.parse(url);
                     String e = null;
-                    String check[] = {
+                    String[] check = {
                             "error", "error_type"
                     };
                     for (String aCheck : check) {
@@ -177,7 +182,7 @@ public class OAuth2Activity extends AppCompatActivity {
                         Log.e(getClass().getName(), "e: " + e);
                         Intent res = new Intent()
                                 .putExtra("error", e);
-                        OAuth2Activity.this.setResult(Activity.RESULT_CANCELED, res);
+                        OAuth2Activity.this.setResult(AppCompatActivity.RESULT_CANCELED, res);
                         OAuth2Activity.this.finish();
                         return;
                     }
@@ -205,7 +210,7 @@ public class OAuth2Activity extends AppCompatActivity {
                     new AsyncTask<String, String, Integer>() {
                         @Override
                         protected Integer doInBackground(String... params) {
-                            int resultCode = Activity.RESULT_CANCELED;
+                            int resultCode = AppCompatActivity.RESULT_CANCELED;
                             HttpURLConnection conn = null;
 
                             try {
@@ -222,7 +227,7 @@ public class OAuth2Activity extends AppCompatActivity {
 
                                 try {
                                     BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                                    char buf[] = new char[1024];
+                                    char[] buf = new char[1024];
                                     int len;
                                     while ((len = in.read(buf)) != -1) {
                                         obj.append(buf, 0, len);
@@ -230,7 +235,7 @@ public class OAuth2Activity extends AppCompatActivity {
 
                                     res.putExtra(DB.ACCOUNT.AUTH_CONFIG, obj.toString());
                                     if (responseCode >= HttpURLConnection.HTTP_OK && responseCode < HttpURLConnection.HTTP_MULT_CHOICE) {
-                                        resultCode = Activity.RESULT_OK;
+                                        resultCode = AppCompatActivity.RESULT_OK;
                                     }
                                 } catch (IOException e) {
                                     InputStream inS = conn.getErrorStream();
@@ -277,7 +282,7 @@ public class OAuth2Activity extends AppCompatActivity {
         super.onDestroy();
     }
 
-    public static Intent getIntent(Activity activity, OAuth2Server server) {
+    public static Intent getIntent(AppCompatActivity activity, OAuth2Server server) {
         Bundle b = new Bundle();
         b.putString(OAuth2ServerCredentials.CLIENT_ID, server.getClientId());
         b.putString(OAuth2ServerCredentials.CLIENT_SECRET,
@@ -291,8 +296,7 @@ public class OAuth2Activity extends AppCompatActivity {
             b.putString(OAuth2ServerCredentials.AUTH_EXTRA, extra);
         }
 
-        Intent args = new Intent(activity, OAuth2Activity.class)
-                .putExtra(OAuth2Activity.OAuth2ServerCredentials.AUTH_ARGUMENTS, b);
-        return args;
+        return new Intent(activity, OAuth2Activity.class)
+                .putExtra(OAuth2ServerCredentials.AUTH_ARGUMENTS, b);
     }
 }

@@ -17,7 +17,6 @@
 
 package org.runnerup.db;
 
-import android.support.v7.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.ContentValues;
 import android.content.Context;
@@ -28,29 +27,21 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.os.AsyncTask;
 import android.util.Log;
 
+import androidx.appcompat.app.AlertDialog;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.runnerup.R;
 import org.runnerup.common.util.Constants;
 import org.runnerup.db.entities.DBEntity;
-import org.runnerup.export.DigifitSynchronizer;
 import org.runnerup.export.DropboxSynchronizer;
-import org.runnerup.export.EndomondoSynchronizer;
-import org.runnerup.export.FacebookSynchronizer;
 import org.runnerup.export.FileSynchronizer;
-import org.runnerup.export.FunBeatSynchronizer;
-import org.runnerup.export.GarminSynchronizer;
-import org.runnerup.export.GoogleFitSynchronizer;
-import org.runnerup.export.JoggSESynchronizer;
-import org.runnerup.export.MapMyRunSynchronizer;
-import org.runnerup.export.NikePlusSynchronizer;
 import org.runnerup.export.RunKeeperSynchronizer;
 import org.runnerup.export.RunalyzeSynchronizer;
 import org.runnerup.export.RunnerUpLiveSynchronizer;
 import org.runnerup.export.RunningAHEADSynchronizer;
-import org.runnerup.export.RunningFreeOnlineSynchronizer;
-import org.runnerup.export.RuntasticSynchronizer;
 import org.runnerup.export.StravaSynchronizer;
+import org.runnerup.export.WebDavSynchronizer;
 import org.runnerup.util.FileUtil;
 import org.runnerup.workout.FileFormats;
 
@@ -72,6 +63,7 @@ public class DBHelper extends SQLiteOpenHelper implements
     //        + (DB.DBINFO.ACCOUNT_VERSION + " integer not null default 0")
     //        + ");";
 
+    @SuppressWarnings("SyntaxError")
     private static final String CREATE_TABLE_ACTIVITY = "create table "
             + DB.ACTIVITY.TABLE + " ( "
             + ("_id integer primary key autoincrement, ")
@@ -128,6 +120,7 @@ public class DBHelper extends SQLiteOpenHelper implements
             + (DB.LAP.AVG_CADENCE + " real ")
             + ");";
 
+    @SuppressWarnings("SyntaxError")
     private static final String CREATE_TABLE_ACCOUNT = "create table "
             + DB.ACCOUNT.TABLE + " ( "
             + ("_id integer primary key autoincrement, ")
@@ -393,8 +386,8 @@ public class DBHelper extends SQLiteOpenHelper implements
 
     private void migrateFileSynchronizerInfo(SQLiteDatabase arg0) {
         // Migrate storage of parameters
-        String from[] = { "_id", DB.ACCOUNT.FORMAT, DB.ACCOUNT.AUTH_CONFIG };
-        String args[] = { FileSynchronizer.NAME };
+        String[] from = { "_id", DB.ACCOUNT.FORMAT, DB.ACCOUNT.AUTH_CONFIG };
+        String[] args = { FileSynchronizer.NAME };
         Cursor c = arg0.query(DB.ACCOUNT.TABLE, from,
                 DB.ACCOUNT.NAME + " = ? and "
                         + DB.ACCOUNT.AUTH_CONFIG + " is not null",
@@ -416,7 +409,7 @@ public class DBHelper extends SQLiteOpenHelper implements
                 try {
                     // Check if AUTH_CONFIG contains deprecated FORMAT field
                     JSONObject authcfg = new JSONObject(oldAuthConfig);
-                    String format = authcfg.optString(DB.ACCOUNT.FORMAT, null);
+                    @SuppressWarnings("ConstantConditions") String format = authcfg.optString(DB.ACCOUNT.FORMAT, null);
                     if (format != null) {
                         // Move deprecated FORMAT field in AUTH_CONFIG to ACCOUNT.FORMAT
                         authcfg.put(DB.ACCOUNT.FORMAT, null);
@@ -470,25 +463,14 @@ public class DBHelper extends SQLiteOpenHelper implements
         //The accounts must exist in the database, but normally the default values are sufficient
         //ENABLED, FLAGS need to be set if ever changed (like disabled or later enabled)
         //"Minor changes" like adding a new syncher can be handled with updating DB.DBINFO.ACCOUNT_VERSION
-        insertAccount(arg0, GarminSynchronizer.NAME, 0);
         insertAccount(arg0, RunKeeperSynchronizer.NAME, 1);
-        insertAccount(arg0, JoggSESynchronizer.NAME, 0);
-        insertAccount(arg0, FunBeatSynchronizer.NAME, 0);
-        insertAccount(arg0, MapMyRunSynchronizer.NAME, 0);
-        insertAccount(arg0, NikePlusSynchronizer.NAME, 0);
-        insertAccount(arg0, EndomondoSynchronizer.NAME, 1);
         insertAccount(arg0, RunningAHEADSynchronizer.NAME, 0);
-        insertAccount(arg0, DigifitSynchronizer.NAME, 0);
         insertAccount(arg0, StravaSynchronizer.NAME, 1);
         insertAccount(arg0, RunnerUpLiveSynchronizer.NAME, 0);
-        insertAccount(arg0, FacebookSynchronizer.NAME, 0);
-        //insertAccount(arg0, GooglePlusSynchronizer.NAME, 0);
-        insertAccount(arg0, RuntasticSynchronizer.NAME, 0);
-        insertAccount(arg0, GoogleFitSynchronizer.NAME, 0);
-        insertAccount(arg0, RunningFreeOnlineSynchronizer.NAME, 0);
         insertAccount(arg0, FileSynchronizer.NAME, 1);
         insertAccount(arg0, RunalyzeSynchronizer.NAME, RunalyzeSynchronizer.ENABLED);
-        insertAccount(arg0, DropboxSynchronizer.NAME, DropboxSynchronizer.ENABLED);
+        insertAccount(arg0, DropboxSynchronizer.NAME, 0);
+        insertAccount(arg0, WebDavSynchronizer.NAME, 1);
     }
 
     private static void insertAccount(SQLiteDatabase arg0, String name, int enabled) {
@@ -512,7 +494,7 @@ public class DBHelper extends SQLiteOpenHelper implements
         long newId = arg0.insertWithOnConflict(DB.ACCOUNT.TABLE, null, arg1, SQLiteDatabase.CONFLICT_IGNORE);
         if (newId == -1 && arg1.size() > 1) {
             //values could be updated
-            String arr[] = {
+            String[] arr = {
                     arg1.getAsString(DB.ACCOUNT.NAME)
             };
             //DBVERSION update
@@ -522,6 +504,16 @@ public class DBHelper extends SQLiteOpenHelper implements
             Log.v("DBhelper", "update: " + arg1);
         }
     }
+
+    public static void deleteAccount(SQLiteDatabase db, long id) {
+        Log.e("DBHelper", "deleting account: " + id);
+        String[] args = {
+                Long.toString(id)
+        };
+        db.delete(DB.EXPORT.TABLE, DB.EXPORT.ACCOUNT + " = ?", args);
+        db.delete(DB.ACCOUNT.TABLE, "_id = ?", args);
+    }
+
 
     public static ContentValues get(Cursor c) {
         if (c.isClosed() || c.isAfterLast() || c.isBeforeFirst())
@@ -543,12 +535,12 @@ public class DBHelper extends SQLiteOpenHelper implements
                 list.add(get(c));
             } while (c.moveToNext());
         }
-        return list.toArray(new ContentValues[list.size()]);
+        return list.toArray(new ContentValues[0]);
     }
 
     public static void deleteActivity(SQLiteDatabase db, long id) {
         Log.e("DBHelper", "deleting activity: " + id);
-        String args[] = {
+        String[] args = {
                 Long.toString(id)
         };
         db.delete(DB.EXPORT.TABLE, DB.EXPORT.ACTIVITY + " = ?", args);
@@ -562,7 +554,7 @@ public class DBHelper extends SQLiteOpenHelper implements
 
         final DBHelper mDBHelper = DBHelper.getHelper(ctx);
         final SQLiteDatabase db = mDBHelper.getWritableDatabase();
-        String from[] = { "_id" };
+        String[] from = { "_id" };
         Cursor c = db.query(DB.ACTIVITY.TABLE, from, "deleted <> 0",
                 null, null, null, null, null);
         final ArrayList<Long> list = new ArrayList<>(10);
@@ -622,52 +614,56 @@ public class DBHelper extends SQLiteOpenHelper implements
         return ctx.getFilesDir().getPath() + "/../databases/" + DBNAME;
     }
 
+    private static String getDefaultBackupPath(Context ctx) {
+        // A path that can be used with SDK 29 scooped storage
+        return ctx.getExternalFilesDir(null) + File.separator + "runnerup.db.export";
+    }
+
     public static void importDatabase(Context ctx, String from) {
         final DBHelper mDBHelper = DBHelper.getHelper(ctx);
         final SQLiteDatabase db = mDBHelper.getWritableDatabase();
         db.close();
         mDBHelper.close();
 
-        DialogInterface.OnClickListener listener = new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                dialog.dismiss();
-            }
-        };
+        DialogInterface.OnClickListener listener = (dialog, which) -> dialog.dismiss();
 
+        if (from == null) {
+            from = getDefaultBackupPath(ctx);
+        }
         AlertDialog.Builder builder = new AlertDialog.Builder(ctx)
-                .setTitle("Import " + DBNAME + " from " + from);
+                .setTitle("Import " + DBNAME);
         try {
             String to = getDbPath(ctx);
             int cnt = FileUtil.copyFile(to, from);
-            builder.setMessage("Copied " + cnt + " bytes")
-                    .setPositiveButton(ctx.getString(R.string.Great), listener);
+            builder.setMessage("Copied " + cnt + " bytes from " + from +
+                "\n\nRestart to use the database")
+                    .setPositiveButton(R.string.OK, listener);
         } catch (IOException e) {
-            builder.setMessage("Exception: " + e.toString())
-                    .setNegativeButton(ctx.getString(R.string.Darn), listener);
+            builder.setMessage("Exception: " + e.toString() + " for " + from)
+                    .setNegativeButton(R.string.Cancel, listener);
         }
         builder.show();
     }
 
     public static void exportDatabase(Context ctx, String to) {
-        DialogInterface.OnClickListener listener = new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                dialog.dismiss();
-            }
-        };
+        DialogInterface.OnClickListener listener = (dialog, which) -> dialog.dismiss();
 
+        if (to == null) {
+            to = getDefaultBackupPath(ctx);
+        }
         AlertDialog.Builder builder = new AlertDialog.Builder(ctx)
-                .setTitle("Export " + DBNAME + " to " + to);
+                .setTitle("Export " + DBNAME);
         try {
             String from = getDbPath(ctx);
             int cnt = FileUtil.copyFile(to, from);
-            builder.setMessage("Copied " + cnt + " bytes")
-                    .setPositiveButton(ctx.getString(R.string.Great), listener);
+            builder.setMessage("Exported " + cnt + " bytes to " + to +
+                    "\n\nNote that the file will be deleted at uninstall")
+                    .setPositiveButton(R.string.OK, listener);
         } catch (IOException e) {
-            builder.setMessage("Exception: " + e.toString())
-                    .setNegativeButton(ctx.getString(R.string.Darn), listener);
+            builder.setMessage("Exception: " + e.toString() + " for " + to)
+                    .setNegativeButton(R.string.Cancel, listener);
         }
         builder.show();
     }
 }
+

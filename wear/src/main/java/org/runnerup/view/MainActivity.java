@@ -38,6 +38,7 @@ import org.runnerup.common.util.Constants;
 import org.runnerup.common.util.ValueModel;
 import org.runnerup.service.StateService;
 import org.runnerup.widget.MyDotsPageIndicator;
+
 import java.util.ArrayList;
 
 public class MainActivity extends Activity implements Constants, ValueModel.ChangeListener<TrackerState> {
@@ -49,6 +50,7 @@ public class MainActivity extends Activity implements Constants, ValueModel.Chan
     private boolean pauseStep = false;
     private int scroll = 0;
     private boolean postScrollRightRunning = false;
+    private boolean mIsBound;
 
     private static final int RUN_INFO_ROW = 0;
     private static final int PAUSE_RESUME_ROW = 1;
@@ -57,14 +59,14 @@ public class MainActivity extends Activity implements Constants, ValueModel.Chan
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        pager = (GridViewPager) findViewById(R.id.pager);
+        pager = findViewById(R.id.pager);
         FragmentGridPagerAdapter pageAdapter = new PagerAdapter(getFragmentManager());
         pager.setAdapter(pageAdapter);
 
-        LinearLayout verticalDotsPageIndicator = (LinearLayout) findViewById(R.id.vert_page_indicator);
+        LinearLayout verticalDotsPageIndicator = findViewById(R.id.vert_page_indicator);
         MyDotsPageIndicator dot2 = new MyDotsPageIndicator(verticalDotsPageIndicator);
 
-        DotsPageIndicator dotsPageIndicator = (DotsPageIndicator) findViewById(R.id.page_indicator);
+        DotsPageIndicator dotsPageIndicator = findViewById(R.id.page_indicator);
         dotsPageIndicator.setPager(pager);
         dotsPageIndicator.setDotFadeWhenIdle(false);
         dotsPageIndicator.setDotFadeOutDelay(1000 * 3600 * 24);
@@ -76,7 +78,7 @@ public class MainActivity extends Activity implements Constants, ValueModel.Chan
     @Override
     protected void onResume() {
         super.onResume();
-        getApplicationContext().bindService(new Intent(this, StateService.class),
+        mIsBound = getApplicationContext().bindService(new Intent(this, StateService.class),
                 mStateServiceConnection, Context.BIND_AUTO_CREATE);
     }
 
@@ -87,7 +89,10 @@ public class MainActivity extends Activity implements Constants, ValueModel.Chan
             mStateService.unregisterTrackerStateListener(this);
             mStateService.unregisterHeadersListener(this);
         }
-        getApplicationContext().unbindService(mStateServiceConnection);
+        if (mIsBound) {
+            getApplicationContext().unbindService(mStateServiceConnection);
+            mIsBound = false;
+        }
         mStateService = null;
     }
 

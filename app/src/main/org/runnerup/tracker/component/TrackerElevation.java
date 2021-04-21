@@ -27,13 +27,12 @@ import android.hardware.SensorManager;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
+import org.matthiaszimmermann.location.egm96.Geoid;
 import org.runnerup.BuildConfig;
 import org.runnerup.R;
 import org.runnerup.tracker.Tracker;
 
 import java.io.IOException;
-
-import org.matthiaszimmermann.location.egm96.Geoid;
 
 public class TrackerElevation extends DefaultTrackerComponent implements SensorEventListener {
 
@@ -83,7 +82,6 @@ public class TrackerElevation extends DefaultTrackerComponent implements SensorE
     public Double getValue() {
         Double val;
         Float pressure = tracker.getCurrentPressure();
-        //noinspection ConstantConditions
         if (pressure != null && BuildConfig.VERSION_CODE >= 9) {
             //Pressure available - use it for elevation
             //TODO get real sea level pressure (online) or set offset from start/end
@@ -117,7 +115,7 @@ public class TrackerElevation extends DefaultTrackerComponent implements SensorE
         if (arg0.hasAltitude()
                 && (mElevationOffset == null || arg0.getTime() < minEleAverageCutoffTime || !isStarted)) {
             //If mElevationOffset is not "used" yet or shortly after first GPS, update the average
-            Double ele = arg0.getAltitude();
+            double ele = arg0.getAltitude();
             final int minElevationStabilizeTime = 60;
             if (minEleAverageCutoffTime == Long.MAX_VALUE) {
                 minEleAverageCutoffTime = arg0.getTime() + minElevationStabilizeTime * 1000;
@@ -157,7 +155,7 @@ public class TrackerElevation extends DefaultTrackerComponent implements SensorE
     @Override
     public ResultCode onInit(Callback callback, Context context) {
         final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        Boolean altitudeAdjust = prefs.getBoolean(context.getString(R.string.pref_altitude_adjust), true);
+        boolean altitudeAdjust = prefs.getBoolean(context.getString(R.string.pref_altitude_adjust), true);
         mAltitudeFromGpsAverage = prefs.getBoolean(context.getString(org.runnerup.R.string.pref_pressure_elevation_gps_average), false);
         if (altitudeAdjust) {
             mGeoidAdjust = (new GeoidAdjust()).GetAltitudeAdjust(context);

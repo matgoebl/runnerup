@@ -14,7 +14,6 @@
   ~
   ~  You should have received a copy of the GNU General Public License
   ~  along with this program.  If not, see <http://www.gnu.org/licenses/>.-->
-  <string name="app_name">RunnerUp</string>
   <!--metrics stuff-->
   <string name="metrics_distance_km">km</string>
   <string name="metrics_distance_mi">mi</string>
@@ -24,15 +23,10 @@
   <string name="metrics_elapsed_min">min</string>
   <string name="metrics_elapsed_s">s</string>
   <string name="metrics_heartrate">HR</string>
-  <!--format hint stuff-->
   <string name="Maximum_heart_rate_MHR">Maksimal hjerterytme (MHR)</string>
   <string name="Target_pace_HHMMSS">Målhastighet</string>
-  <!--strings with argument to provide-->
   <!--first argument is a date, second a time, for instance: "Yesterday at 13:32"-->
   <string name="formatting_date_at_time">%1$s klokka %2$s</string>
-  <!--weird stuff: should it be placeholders or even removed?-->
-  <string name="ok_rats">ok, fillern</string>
-  <!--other-->
   <string name="Type">Type</string>
   <string name="active">aktiv</string>
   <string name="rest">hvile</string>
@@ -64,7 +58,6 @@
   <string name="Interval">Intervall</string>
   <string name="Lap">Runde</string>
   <string name="New_lap">Ny runde</string>
-  <string name="Next_lap">Neste runde</string>
   <string name="Pause">Pause</string>
   <string name="Stop">Stopp</string>
   <string name="Workout">Treningsøkt</string>
@@ -135,16 +128,10 @@
   <string name="Select_type_of_Bluetooth_device">Velg Blåtannsenhetstype</string>
   <string name="Scanning">Skanner</string>
   <string name="Failed_to_load_workout">Kunne ikke laste inn treningsøkt!</string>
-  <string name="Problem">Problem</string>
   <string name="Edit_step">Rediger steg</string>
   <string name="Create_new_audio_cue_scheme">Lag nytt opplegg for lydinstrukser</string>
-  <string name="Great">Flott!</string>
-  <string name="OK_darn">OK, fillern!</string>
   <string name="Yes">Ja</string>
   <string name="Create">Lag</string>
-  <string name="Darn">Fillern!</string>
-  <string name="Dismiss">Avslå</string>
-  <string name="No_way">Absolutt ikke</string>
   <string name="No">Nei</string>
   <string name="Loading">Laster…</string>
   <string name="Saving">Lagrer</string>
@@ -244,7 +231,6 @@
   <string name="Activity_ready">Aktivitet klar</string>
   <string name="Ready_to_start_running">Klar til å springe!</string>
   <string name="Searching_for_GPS">Søker etter GPS</string>
-  <string name="Activity_ongoing">Aktivitet pågår</string>
   <string name="RunnerUp_activity_started">RunnerUp-aktivitet startet</string>
   <string name="Low_HRM_battery_level">Lavt batterinivå på HRM</string>
   <string name="High_HRM_battery_level">Høyt batterinivå på HRM</string>
@@ -285,7 +271,6 @@
   <string name="No_feed_to_show">Ingen strøm å vise</string>
   <string name="Unused_currently">For tiden ikke i bruk.</string>
   <string name="Unknown">Ukjent</string>
-  <string name="RunningFreeOnlinePasswordNotice">Merk: Bruk \"Hemmelig nøkkel\" som passord satt på nettsider under Legg til &gt; synkroniser trening &gt; SportTracks.</string>
   <string name="Recording">Opptak</string>
   <string name="Sensors">Sensorer</string>
   <string name="Maintenance">Vedlikehold</string>

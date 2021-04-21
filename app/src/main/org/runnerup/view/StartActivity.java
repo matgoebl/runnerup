@@ -17,25 +17,26 @@
 
 package org.runnerup.view;
 
+import android.Manifest;
 import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.database.sqlite.SQLiteDatabase;
 import android.location.Location;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.os.PowerManager;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.app.AppCompatDelegate;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -53,6 +54,13 @@ import android.widget.TabHost.OnTabChangeListener;
 import android.widget.TabHost.TabSpec;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+
 import org.runnerup.BuildConfig;
 import org.runnerup.R;
 import org.runnerup.common.tracker.TrackerState;
@@ -66,13 +74,13 @@ import org.runnerup.notification.NotificationManagerDisplayStrategy;
 import org.runnerup.notification.NotificationStateManager;
 import org.runnerup.tracker.GpsInformation;
 import org.runnerup.tracker.Tracker;
+import org.runnerup.tracker.component.TrackerCadence;
 import org.runnerup.tracker.component.TrackerHRM;
 import org.runnerup.tracker.component.TrackerWear;
 import org.runnerup.util.Formatter;
 import org.runnerup.util.SafeParse;
 import org.runnerup.util.TickListener;
 import org.runnerup.widget.ClassicSpinner;
-import org.runnerup.widget.SpinnerInterface;
 import org.runnerup.widget.SpinnerInterface.OnCloseDialogListener;
 import org.runnerup.widget.SpinnerInterface.OnSetValueListener;
 import org.runnerup.widget.TitleSpinner;
@@ -87,7 +95,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-public class StartActivity extends AppCompatActivity implements TickListener, GpsInformation {
+public class StartActivity extends AppCompatActivity
+        implements ActivityCompat.OnRequestPermissionsResultCallback, TickListener, GpsInformation {
 
     private enum GpsLevel {POOR, ACCEPTABLE, GOOD}
 
@@ -171,7 +180,7 @@ public class StartActivity extends AppCompatActivity implements TickListener, Gp
         LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         setContentView(R.layout.start);
 
-        ClassicSpinner sportSpinner = (ClassicSpinner) findViewById(R.id.sport_spinner);
+        ClassicSpinner sportSpinner = findViewById(R.id.sport_spinner);
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
                 R.array.sportEntries, R.layout.actionbar_spinner);
         adapter.setDropDownViewResource(R.layout.actionbar_dropdown_spinner);
@@ -182,46 +191,41 @@ public class StartActivity extends AppCompatActivity implements TickListener, Gp
         startButton = findViewById(R.id.start_button);
         startButton.setOnClickListener(startButtonClick);
 
-        expandIcon = (ImageView) findViewById(R.id.expand_icon);
-        deviceStatus = (TextView) findViewById(R.id.device_status);
+        expandIcon = findViewById(R.id.expand_icon);
+        deviceStatus = findViewById(R.id.device_status);
 
-        gpsIndicator = (ImageView) findViewById(R.id.gps_indicator);
-        gpsMessage = (TextView) findViewById(R.id.gps_message);
-        gpsDetailRow = (LinearLayout) findViewById(R.id.gps_detail_row);
-        gpsDetailIndicator = (ImageView) findViewById(R.id.gps_detail_indicator);
-        gpsDetailMessage = (TextView) findViewById(R.id.gps_detail_message);
+        gpsIndicator = findViewById(R.id.gps_indicator);
+        gpsMessage = findViewById(R.id.gps_message);
+        gpsDetailRow = findViewById(R.id.gps_detail_row);
+        gpsDetailIndicator = findViewById(R.id.gps_detail_indicator);
+        gpsDetailMessage = findViewById(R.id.gps_detail_message);
 
-        gpsEnable = (Button) findViewById(R.id.gps_enable_button);
+        gpsEnable = findViewById(R.id.gps_enable_button);
         gpsEnable.setOnClickListener(gpsEnableClick);
 
-        hrMessage = (TextView) findViewById(R.id.hr_message);
-        hrIndicator = (ImageView) findViewById(R.id.hr_indicator);
+        hrMessage = findViewById(R.id.hr_message);
+        hrIndicator = findViewById(R.id.hr_indicator);
 
-        wearOsIndicator = (ImageView) findViewById(R.id.wearos_indicator);
-        wearOsMessage = (TextView) findViewById(R.id.wearos_message);
+        wearOsIndicator = findViewById(R.id.wearos_indicator);
+        wearOsMessage = findViewById(R.id.wearos_message);
 
-        findViewById(R.id.status_layout).setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                toggleStatusDetails();
-            }
-        });
+        findViewById(R.id.status_layout).setOnClickListener(view -> toggleStatusDetails());
 
-        tabHost = (TabHost) findViewById(R.id.tabhost_start);
+        tabHost = findViewById(R.id.tabhost_start);
         tabHost.setup();
         TabSpec tabSpec = tabHost.newTabSpec(TAB_BASIC);
         tabSpec.setIndicator(WidgetUtil.createHoloTabIndicator(this, getString(R.string.Basic)));
-        tabSpec.setContent(R.id.tab_basic);
+        tabSpec.setContent(R.id.start_basic_tab);
         tabHost.addTab(tabSpec);
 
         tabSpec = tabHost.newTabSpec(TAB_INTERVAL);
         tabSpec.setIndicator(WidgetUtil.createHoloTabIndicator(this, getString(R.string.Interval)));
-        tabSpec.setContent(R.id.tab_interval);
+        tabSpec.setContent(R.id.start_interval_tab);
         tabHost.addTab(tabSpec);
 
         tabSpec = tabHost.newTabSpec(TAB_ADVANCED);
         tabSpec.setIndicator(WidgetUtil.createHoloTabIndicator(this, getString(R.string.Advanced)));
-        tabSpec.setContent(R.id.tab_advanced);
+        tabSpec.setContent(R.id.start_advanced_tab);
         tabHost.addTab(tabSpec);
 
         tabHost.setOnTabChangedListener(onTabChangeListener);
@@ -229,53 +233,50 @@ public class StartActivity extends AppCompatActivity implements TickListener, Gp
 
         simpleAudioListAdapter = new AudioSchemeListAdapter(mDB, inflater, false);
         simpleAudioListAdapter.reload();
-        TitleSpinner simpleAudioSpinner = (TitleSpinner) findViewById(R.id.basic_audio_cue_spinner);
+        TitleSpinner simpleAudioSpinner = findViewById(R.id.basic_audio_cue_spinner);
         simpleAudioSpinner.setAdapter(simpleAudioListAdapter);
         simpleAudioSpinner.setOnSetValueListener(new OnConfigureAudioListener(simpleAudioListAdapter));
-        simpleTargetType = (TitleSpinner) findViewById(R.id.tab_basic_target_type);
-        simpleTargetPaceValue = (TitleSpinner) findViewById(R.id.tab_basic_target_pace_max);
+        simpleTargetType = findViewById(R.id.tab_basic_target_type);
+        simpleTargetPaceValue = findViewById(R.id.tab_basic_target_pace_max);
         hrZonesAdapter = new HRZonesListAdapter(this, inflater);
-        simpleTargetHrz = (TitleSpinner) findViewById(R.id.tab_basic_target_hrz);
+        simpleTargetHrz = findViewById(R.id.tab_basic_target_hrz);
         simpleTargetHrz.setAdapter(hrZonesAdapter);
         simpleTargetType.setOnCloseDialogListener(simpleTargetTypeClick);
 
-        intervalType = (TitleSpinner) findViewById(R.id.interval_type);
-        intervalTime = (TitleSpinner) findViewById(R.id.interval_time);
+        intervalType = findViewById(R.id.interval_type);
+        intervalTime = findViewById(R.id.start_interval_time);
         intervalTime.setOnSetValueListener(onSetTimeValidator);
-        intervalDistance = (TitleSpinner) findViewById(R.id.interval_distance);
+        intervalDistance = findViewById(R.id.interval_distance);
         intervalType.setOnSetValueListener(intervalTypeSetValue);
-        intervalRestType = (TitleSpinner) findViewById(R.id.interval_rest_type);
-        intervalRestTime = (TitleSpinner) findViewById(R.id.interval_rest_time);
+        intervalRestType = findViewById(R.id.interval_rest_type);
+        intervalRestTime = findViewById(R.id.interval_rest_time);
         intervalRestTime.setOnSetValueListener(onSetTimeValidator);
-        intervalRestDistance = (TitleSpinner) findViewById(R.id.interval_rest_distance);
+        intervalRestDistance = findViewById(R.id.interval_rest_distance);
         intervalRestType.setOnSetValueListener(intervalRestTypeSetValue);
         intervalAudioListAdapter = new AudioSchemeListAdapter(mDB, inflater, false);
         intervalAudioListAdapter.reload();
-        TitleSpinner intervalAudioSpinner = (TitleSpinner) findViewById(R.id.interval_audio_cue_spinner);
+        TitleSpinner intervalAudioSpinner = findViewById(R.id.interval_audio_cue_spinner);
         intervalAudioSpinner.setAdapter(intervalAudioListAdapter);
         intervalAudioSpinner.setOnSetValueListener(new OnConfigureAudioListener(intervalAudioListAdapter));
 
         advancedAudioListAdapter = new AudioSchemeListAdapter(mDB, inflater, false);
         advancedAudioListAdapter.reload();
-        TitleSpinner advancedAudioSpinner = (TitleSpinner) findViewById(R.id.advanced_audio_cue_spinner);
+        TitleSpinner advancedAudioSpinner = findViewById(R.id.advanced_audio_cue_spinner);
         advancedAudioSpinner.setAdapter(advancedAudioListAdapter);
         advancedAudioSpinner.setOnSetValueListener(new OnConfigureAudioListener(advancedAudioListAdapter));
 
-        advancedWorkoutSpinner = (TitleSpinner) findViewById(R.id.advanced_workout_spinner);
+        advancedWorkoutSpinner = findViewById(R.id.advanced_workout_spinner);
         advancedWorkoutListAdapter = new WorkoutListAdapter(inflater);
         advancedWorkoutListAdapter.reload();
         advancedWorkoutSpinner.setAdapter(advancedWorkoutListAdapter);
         advancedWorkoutSpinner.setOnSetValueListener(new OnConfigureWorkoutsListener(advancedWorkoutListAdapter));
-        advancedStepList = (ListView) findViewById(R.id.advanced_step_list);
+        advancedStepList = findViewById(R.id.advanced_step_list);
         advancedStepList.setDividerHeight(0);
         advancedStepList.setAdapter(advancedWorkoutStepsAdapter);
-        advancedDownloadWorkoutButton = (Button) findViewById(R.id.advanced_download_button);
-        advancedDownloadWorkoutButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(StartActivity.this, ManageWorkoutsActivity.class);
-                StartActivity.this.startActivityForResult(intent, 113);
-            }
+        advancedDownloadWorkoutButton = findViewById(R.id.advanced_download_button);
+        advancedDownloadWorkoutButton.setOnClickListener(v -> {
+            Intent intent = new Intent(StartActivity.this, ManageWorkoutsActivity.class);
+            StartActivity.this.startActivityForResult(intent, 113);
         });
 
         if (getParent() != null && getParent().getIntent() != null) {
@@ -292,7 +293,7 @@ public class StartActivity extends AppCompatActivity implements TickListener, Gp
     }
 
     private class OnConfigureAudioListener implements OnSetValueListener {
-        AudioSchemeListAdapter adapter;
+        final AudioSchemeListAdapter adapter;
 
         OnConfigureAudioListener(AudioSchemeListAdapter adapter) {
             this.adapter = adapter;
@@ -315,7 +316,7 @@ public class StartActivity extends AppCompatActivity implements TickListener, Gp
     }
 
     private class OnConfigureWorkoutsListener implements OnSetValueListener {
-        WorkoutListAdapter adapter;
+        final WorkoutListAdapter adapter;
 
         OnConfigureWorkoutsListener(WorkoutListAdapter adapter) {
             this.adapter = adapter;
@@ -419,17 +420,14 @@ public class StartActivity extends AppCompatActivity implements TickListener, Gp
     private final BroadcastReceiver startEventBroadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    if (mTracker == null || startButton.getVisibility() != View.VISIBLE)
-                        return;
+            runOnUiThread(() -> {
+                if (mTracker == null || startButton.getVisibility() != View.VISIBLE)
+                    return;
 
-                    if (mTracker.getState() == TrackerState.INIT /* this will start gps */ ||
-                            mTracker.getState() == TrackerState.INITIALIZED /* ...start a workout*/ ||
-                            mTracker.getState() == TrackerState.CONNECTED) {
-                        startButton.performClick();
-                    }
+                if (mTracker.getState() == TrackerState.INIT /* this will start gps */ ||
+                        mTracker.getState() == TrackerState.INITIALIZED /* ...start a workout*/ ||
+                        mTracker.getState() == TrackerState.CONNECTED) {
+                    startButton.performClick();
                 }
             });
         }
@@ -462,7 +460,9 @@ public class StartActivity extends AppCompatActivity implements TickListener, Gp
     }
 
     private void onGpsTrackerBound() {
-        if (getAutoStartGps()) {
+        // check and request permissions at startup
+        boolean missingEssentialPermission = checkPermissions(false);
+        if (!missingEssentialPermission && getAutoStartGps()) {
             startGps();
         } else {
             switch (mTracker.getState()) {
@@ -496,7 +496,11 @@ public class StartActivity extends AppCompatActivity implements TickListener, Gp
     }
 
     private void startGps() {
-        Log.e(getClass().getName(), "StartActivity.startGps()");
+        Log.v(getClass().getName(), "StartActivity.startGps()");
+        if (!mGpsStatus.isEnabled()) {
+            startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+        }
+
         if (mGpsStatus != null && !mGpsStatus.isLogging())
             mGpsStatus.start(this);
 
@@ -549,31 +553,25 @@ public class StartActivity extends AppCompatActivity implements TickListener, Gp
         final CheckBox dontShowAgain = new CheckBox(this);
         dontShowAgain.setText(getResources().getText(R.string.Do_not_show_again));
 
-        AlertDialog.Builder prompt = new AlertDialog.Builder(this)
+        new AlertDialog.Builder(this)
                 .setView(dontShowAgain)
                 .setCancelable(false)
+                .setTitle(R.string.Warning)
                 .setMessage(getResources().getText(R.string.Low_HRM_battery_level)
-                + "\n" + getResources().getText(R.string.Battery_level) + ": " + batteryLevel + "%")
-                .setTitle(getResources().getText(R.string.Warning))
-                .setPositiveButton(getResources().getText(R.string.OK), new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int which) {
-                if (dontShowAgain.isChecked()) {
-                    prefs.edit().putBoolean(pref_key, true).apply();
-                }
-            }
-        });
-        prompt.show();
+                        + "\n" + getResources().getText(R.string.Battery_level) + ": " + batteryLevel + "%")
+                .setPositiveButton(R.string.OK, (dialog, which) -> {
+                    if (dontShowAgain.isChecked()) {
+                        prefs.edit().putBoolean(pref_key, true).apply();
+                    }
+                })
+                .show();
     }
 
-    private final OnTabChangeListener onTabChangeListener = new OnTabChangeListener() {
-
-        @Override
-        public void onTabChanged(String tabId) {
-            if (tabId.contentEquals(TAB_ADVANCED)) {
-                loadAdvanced(null);
-            }
-            updateView();
+    private final OnTabChangeListener onTabChangeListener = tabId -> {
+        if (tabId.contentEquals(TAB_ADVANCED)) {
+            loadAdvanced(null);
         }
+        updateView();
     };
 
     private Workout prepareWorkout() {
@@ -604,39 +602,176 @@ public class StartActivity extends AppCompatActivity implements TickListener, Gp
         return w;
     }
 
+    private void startWorkout() {
+        mGpsStatus.stop(StartActivity.this);
+
+        // unregister receivers
+        unregisterStartEventListener();
+
+        // This will start the advancedWorkoutSpinner!
+        mTracker.setWorkout(prepareWorkout());
+        mTracker.start();
+
+        skipStopGps = true;
+        Intent intent = new Intent(StartActivity.this,
+                RunActivity.class);
+        StartActivity.this.startActivityForResult(intent, 112);
+        notificationStateManager.cancelNotification(); // will be added by RunActivity
+    }
+
     private final OnClickListener startButtonClick = new OnClickListener() {
         public void onClick(View v) {
             if (mTracker.getState() == TrackerState.CONNECTED) {
-                mGpsStatus.stop(StartActivity.this);
+                startWorkout();
 
-                // unregister receivers
-                unregisterStartEventListener();
-
-                // This will start the advancedWorkoutSpinner!
-                mTracker.setWorkout(prepareWorkout());
-                mTracker.start();
-
-                skipStopGps = true;
-                Intent intent = new Intent(StartActivity.this,
-                        RunActivity.class);
-                StartActivity.this.startActivityForResult(intent, 112);
-                notificationStateManager.cancelNotification(); // will be added by RunActivity
                 return;
             }
             updateView();
         }
     };
 
-    private final OnClickListener gpsEnableClick = new OnClickListener() {
-        public void onClick(View v) {
-            if (!mGpsStatus.isEnabled()) {
-                startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
-            } else if (mTracker.getState() != TrackerState.CONNECTED) {
-                startGps();
-            }
-            updateView();
+    private final OnClickListener gpsEnableClick = v -> {
+        if (checkPermissions(true)) {
+            // Handle view update etc in permission callback
+            return;
         }
+
+        if (mTracker.getState() != TrackerState.CONNECTED) {
+            startGps();
+        }
+        updateView();
     };
+
+
+    private List<String> getPermissions() {
+        List<String> requiredPerms = new ArrayList<>();
+        requiredPerms.add(Manifest.permission.ACCESS_FINE_LOCATION);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            requiredPerms.add(Manifest.permission.ACCESS_BACKGROUND_LOCATION);
+
+            final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+            boolean enabled = prefs.getBoolean(this.getString(org.runnerup.R.string.pref_use_cadence_step_sensor), true);
+            if (enabled && TrackerCadence.isAvailable(this)) {
+                requiredPerms.add(Manifest.permission.ACTIVITY_RECOGNITION);
+            }
+        }
+
+        return requiredPerms;
+    }
+
+    /**
+     * Check that required permissions are allowed
+     * @param popup
+     * @return
+     */
+    private boolean checkPermissions(boolean popup) {
+        boolean missingEssentialPermission = false;
+        boolean missingAnyPermission = false;
+        List<String> requiredPerms = getPermissions();
+        List<String> requestPerms = new ArrayList<>();
+
+        for (final String perm : requiredPerms) {
+            if (ContextCompat.checkSelfPermission(this, perm) != PackageManager.PERMISSION_GRANTED) {
+                missingAnyPermission = true;
+                // Filter non essential permissions for result
+                missingEssentialPermission = missingEssentialPermission
+                        || Build.VERSION.SDK_INT < Build.VERSION_CODES.Q
+                        || !perm.equals(Manifest.permission.ACTIVITY_RECOGNITION);
+                if (ActivityCompat.shouldShowRequestPermissionRationale(this, perm)) {
+                    // A denied permission, show motivation in a popup
+                    String s = "Permission " + perm + " is explicitly denied";
+                    Log.i(getClass().getName(), s);
+                } else {
+                    requestPerms.add(perm);
+                }
+            }
+        }
+
+        if (missingAnyPermission) {
+            final String[] permissions = new String[requestPerms.size()];
+            requestPerms.toArray(permissions);
+
+            if (popup && missingEssentialPermission || requestPerms.size() > 0) {
+                // Essential or requestable permissions missing
+                String baseMessage = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+                        ? getString(R.string.GPS_permission_text)
+                        : getString(R.string.GPS_permission_text_pre_Android10);
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(StartActivity.this)
+                        .setTitle(R.string.GPS_permission_required)
+                        .setNegativeButton(R.string.Cancel, (dialog, which) -> dialog.dismiss());
+                if (requestPerms.size() > 0) {
+                    // Let Android request the permissions
+                    builder.setPositiveButton(R.string.OK, (dialog, id) -> ActivityCompat.requestPermissions(this.getParent(), permissions, REQUEST_LOCATION));
+                    builder.setMessage(baseMessage + "\n" + getString(R.string.Request_permission_text));
+                }
+                else if (popup && Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                    // Open settings for the app (no direct shortcut to permissions)
+                    Intent intent = new Intent()
+                            .setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                            .setData(Uri.fromParts("package", getPackageName(), null));
+                    builder.setPositiveButton(R.string.OK, (dialog, id) -> startActivity(intent));
+                    builder.setMessage(baseMessage + "\n\n" + getString(R.string.Request_permission_text));
+                } else {
+                    builder.setMessage(baseMessage);
+                }
+                builder.show();
+            }
+        }
+
+        // https://developer.android.com/training/monitoring-device-state/doze-standby#support_for_other_use_cases
+        // Permission REQUEST_IGNORE_BATTERY_OPTIMIZATIONS requires special approval in Play
+        final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        final Resources res = this.getResources();
+        final boolean suppressOptimizeBatteryPopup = prefs.getBoolean(res.getString(R.string.pref_suppress_battery_optimization_popup), false);
+        PowerManager pm = (PowerManager) this.getSystemService(Context.POWER_SERVICE);
+        if ((popup || getAutoStartGps()) && !suppressOptimizeBatteryPopup
+        && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
+                && !pm.isIgnoringBatteryOptimizations(this.getPackageName())) {
+            new AlertDialog.Builder(StartActivity.this)
+                    .setTitle(R.string.Battery_optimization_check)
+                    .setMessage(R.string.Battery_optimization_check_text)
+                    .setPositiveButton(R.string.OK, (dialog, which) ->
+                            this.startActivity(new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)))
+                    .setNeutralButton(R.string.Do_not_show_again, (dialog, which) ->
+                            prefs.edit().putBoolean(res.getString(R.string.pref_suppress_battery_optimization_popup), true).apply())
+                    .setNegativeButton(R.string.Cancel, (dialog, which) -> dialog.dismiss())
+                    .show();
+        }
+
+        return missingEssentialPermission;
+    }
+
+    // Id to identify a permission request.
+    // TODO When released in 1.2.0, use https://developer.android.com/reference/androidx/activity/result/contract/ActivityResultContracts.RequestPermission
+    private static final int REQUEST_LOCATION = 3000;
+
+    // TODO This callback is not called (due to requestPermissions(this.getParent()?), so onCreate() is used
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        if (requestCode == REQUEST_LOCATION) {
+            // Check if the only required permission has been granted (could react on the response)
+            if (grantResults.length >= 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                String s = "Permission response OK";
+                Log.i(getClass().getName(), s);
+                if (mTracker.getState() != TrackerState.CONNECTED) {
+                    startGps();
+                }
+                updateView();
+
+            } else {
+                String s = "Permission was not granted: " + " ("+grantResults.length+", "+permissions.length + ")";
+                Log.i(getClass().getName(), s);
+            }
+        } else {
+            String s = "Unexpected permission request: " + requestCode;
+            Log.w(getClass().getName(), s);
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        }
+    }
 
     private void toggleStatusDetails() {
         statusDetailsShown = !statusDetailsShown;
@@ -657,10 +792,10 @@ public class StartActivity extends AppCompatActivity implements TickListener, Gp
         updateView();
     }
 
-    private GpsLevel getGpsLevel(double gpsAccuracyMeters) {
-        if (gpsAccuracyMeters <= 7)
+    private GpsLevel getGpsLevel(double gpsAccuracyMeters, int sats) {
+        if (gpsAccuracyMeters <= 7 && sats > 7)
             return GpsLevel.GOOD;
-        else if (gpsAccuracyMeters <= 15)
+        else if (gpsAccuracyMeters <= 15 && sats > 4)
             return GpsLevel.ACCEPTABLE;
         else return GpsLevel.POOR;
     }
@@ -683,11 +818,11 @@ public class StartActivity extends AppCompatActivity implements TickListener, Gp
             gpsEnable.setVisibility(View.VISIBLE);
 
             if (statusDetailsShown) {
-                gpsDetailMessage.setText(getString(R.string.GPS_indicator_off));
+                gpsDetailMessage.setText(R.string.GPS_indicator_off);
                 gpsDetailRow.setVisibility(View.VISIBLE);
                 gpsMessage.setVisibility(View.GONE);
             } else {
-                gpsMessage.setText(getString(R.string.GPS_indicator_off));
+                gpsMessage.setText(R.string.GPS_indicator_off);
                 gpsMessage.setVisibility(View.VISIBLE);
                 gpsDetailRow.setVisibility(View.GONE);
             }
@@ -696,9 +831,9 @@ public class StartActivity extends AppCompatActivity implements TickListener, Gp
             gpsDetailIndicator.setVisibility(View.GONE);
 
             if (!mGpsStatus.isLogging()) {
-                gpsEnable.setText(getString(R.string.Start_GPS));
+                gpsEnable.setText(R.string.Start_GPS);
             } else {
-                gpsEnable.setText(getString(R.string.Enable_GPS));
+                gpsEnable.setText(R.string.Enable_GPS);
             }
         } else {
             gpsDetailIndicator.setVisibility(View.VISIBLE);
@@ -707,14 +842,7 @@ public class StartActivity extends AppCompatActivity implements TickListener, Gp
             int satAvailCount = mGpsStatus.getSatellitesAvailable();
 
             // gps accuracy
-            float accuracy = -1;
-            if (mTracker != null) {
-                Location l = mTracker.getLastKnownLocation();
-
-                if (l != null) {
-                    accuracy = l.getAccuracy();
-                }
-            }
+            float accuracy = getGpsAccuracy();
 
             // gps details
             String gpsAccuracy = getGpsAccuracyString(accuracy);
@@ -729,7 +857,7 @@ public class StartActivity extends AppCompatActivity implements TickListener, Gp
 
                 gpsIndicator.setImageResource(R.drawable.ic_gps_0);
                 gpsDetailIndicator.setImageResource(R.drawable.ic_gps_0);
-                gpsMessage.setText(getString(R.string.Waiting_for_GPS));
+                gpsMessage.setText(R.string.Waiting_for_GPS);
 
                 notificationStateManager.displayNotificationState(gpsSearchingState);
             } else {
@@ -740,7 +868,7 @@ public class StartActivity extends AppCompatActivity implements TickListener, Gp
                 }
                 gpsEnable.setVisibility(View.GONE);
 
-                switch (getGpsLevel(accuracy)) {
+                switch (getGpsLevel(accuracy, satFixedCount)) {
                     case POOR:
                         gpsIndicator.setImageResource(R.drawable.ic_gps_1);
                         gpsDetailIndicator.setImageResource(R.drawable.ic_gps_1);
@@ -826,28 +954,43 @@ public class StartActivity extends AppCompatActivity implements TickListener, Gp
     }
 
     @Override
-    public String getGpsAccuracy() {
+    public float getGpsAccuracy() {
         if (mTracker != null) {
             Location l = mTracker.getLastKnownLocation();
 
             if (l != null) {
-                return getGpsAccuracyString(l.getAccuracy());
+                return l.getAccuracy();
             }
         }
-        return "";
+        return -1;
     }
 
     public String getGpsAccuracyString(float accuracy) {
+        String res = "";
         if (accuracy > 0) {
             String accString = formatter.formatElevation(Formatter.Format.TXT_SHORT, accuracy);
             if (mTracker.getCurrentElevation() != null) {
-                return String.format(Locale.getDefault(), getString(R.string.GPS_accuracy_elevation),
+                res = String.format(Locale.getDefault(), getString(R.string.GPS_accuracy_elevation),
                         accString, formatter.formatElevation(Formatter.Format.TXT_SHORT, mTracker.getCurrentElevation()));
             } else {
-                return String.format(Locale.getDefault(), getString(R.string.GPS_accuracy_no_elevation),
+                res = String.format(Locale.getDefault(), getString(R.string.GPS_accuracy_no_elevation),
                         accString);
             }
-        } else return "";
+        }
+        if (BuildConfig.DEBUG && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            // Extra info in debug builds
+            if (mTracker != null) {
+                Location l = mTracker.getLastKnownLocation();
+
+                if (l != null) {
+                    res += " ["
+                            + l.getVerticalAccuracyMeters() + " m, "
+                            + l.getSpeedAccuracyMetersPerSecond() + " m/s, "
+                            + l.getBearingAccuracyDegrees() + " deg]";
+                }
+            }
+        }
+        return res;
     }
 
     private String getHRDetailString() {
@@ -897,9 +1040,8 @@ public class StartActivity extends AppCompatActivity implements TickListener, Gp
         // class name because we want a specific service implementation that
         // we know will be running in our own process (and thus won't be
         // supporting component replacement by other applications).
-        getApplicationContext().bindService(new Intent(this, Tracker.class),
+        mIsBound = getApplicationContext().bindService(new Intent(this, Tracker.class),
                 mConnection, Context.BIND_AUTO_CREATE);
-        mIsBound = true;
     }
 
     private void unbindGpsTracker() {
@@ -912,6 +1054,7 @@ public class StartActivity extends AppCompatActivity implements TickListener, Gp
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
         registerStartEventListener();
 
         if (data != null) {
@@ -940,13 +1083,9 @@ public class StartActivity extends AppCompatActivity implements TickListener, Gp
         updateView();
     }
 
-    private final OnCloseDialogListener simpleTargetTypeClick = new OnCloseDialogListener() {
-
-        @Override
-        public void onClose(SpinnerInterface spinner, boolean ok) {
-            if (ok) {
-                updateTargetView();
-            }
+    private final OnCloseDialogListener simpleTargetTypeClick = (spinner, ok) -> {
+        if (ok) {
+            updateTargetView();
         }
     };
 
@@ -1020,16 +1159,12 @@ public class StartActivity extends AppCompatActivity implements TickListener, Gp
             advancedDownloadWorkoutButton.setVisibility(View.GONE);
         } catch (Exception ex) {
             ex.printStackTrace();
-            AlertDialog.Builder builder = new AlertDialog.Builder(StartActivity.this);
-            builder.setTitle(getString(R.string.Failed_to_load_workout));
-            builder.setMessage("" + ex.toString());
-            builder.setPositiveButton(getString(R.string.OK),
-                    new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
-                        }
-                    });
-            builder.show();
+            new AlertDialog.Builder(StartActivity.this)
+                    .setTitle(getString(R.string.Failed_to_load_workout))
+                    .setMessage("" + ex.toString())
+                    .setPositiveButton(R.string.OK,
+                    (dialog, which) -> dialog.dismiss())
+                    .show();
         }
     }
 
@@ -1066,7 +1201,7 @@ public class StartActivity extends AppCompatActivity implements TickListener, Gp
         public View getView(int position, View convertView, ViewGroup parent) {
             StepListEntry entry = steps.get(position);
             StepButton button =
-                    (convertView != null && convertView instanceof StepButton) ?
+                    (convertView instanceof StepButton) ?
                             (StepButton) convertView : new StepButton(StartActivity.this, null);
             button.setStep(entry.step);
 
@@ -1078,26 +1213,19 @@ public class StartActivity extends AppCompatActivity implements TickListener, Gp
 
     }
 
-    private final Runnable onWorkoutChanged = new Runnable() {
-        @Override
-        public void run() {
-            String name = advancedWorkoutSpinner.getValue().toString();
-            if (advancedWorkout != null) {
-                Context ctx = getApplicationContext();
-                try {
-                    WorkoutSerializer.writeFile(ctx, name, advancedWorkout);
-                } catch (Exception ex) {
-                    AlertDialog.Builder builder = new AlertDialog.Builder(StartActivity.this)
-                            .setTitle(getString(R.string.Failed_to_load_workout))
-                            .setMessage("" + ex.toString())
-                            .setPositiveButton(getString(R.string.OK),
-                            new DialogInterface.OnClickListener() {
-                                public void onClick(DialogInterface dialog, int which) {
-                                    dialog.dismiss();
-                                }
-                            });
-                    builder.show();
-                }
+    private final Runnable onWorkoutChanged = () -> {
+        String name = advancedWorkoutSpinner.getValue().toString();
+        if (advancedWorkout != null) {
+            Context ctx = getApplicationContext();
+            try {
+                WorkoutSerializer.writeFile(ctx, name, advancedWorkout);
+            } catch (Exception ex) {
+                new AlertDialog.Builder(StartActivity.this)
+                        .setTitle(R.string.Failed_to_load_workout)
+                        .setMessage("" + ex.toString())
+                        .setPositiveButton(R.string.OK,
+                                (dialog, which) -> dialog.dismiss())
+                        .show();
             }
         }
     };

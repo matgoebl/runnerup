@@ -29,10 +29,10 @@
         android:layout_alignParentRight="false"
         android:layout_alignParentLeft="false"
         android:layout_alignParentStart="false"
-        android:layout_above="@+id/button_table" />
+        android:layout_above="@id/manage_button_table" />
 
   <TableLayout
-    android:id="@+id/button_table"
+    android:id="@+id/manage_button_table"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_alignParentBottom="true">
@@ -60,6 +60,17 @@
           android:layout_weight="1"
           android:layout_height="match_parent"
           android:text="@string/Share"
+          android:textSize="16sp"
+      />
+
+      <Button
+          android:id="@+id/edit_workout_button"
+          style="@style/ButtonText"
+          android:background="@drawable/btn_blue"
+          android:layout_width="0dp"
+          android:layout_weight="1"
+          android:layout_height="match_parent"
+          android:text="@string/Edit"
           android:textSize="16sp"
       />
     </TableRow>

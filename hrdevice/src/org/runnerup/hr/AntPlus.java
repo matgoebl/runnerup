@@ -17,11 +17,12 @@
 
 package org.runnerup.hr;
 
-import android.app.Activity;
 import android.content.Context;
 import android.os.Build;
 import android.os.Handler;
 import android.os.SystemClock;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.dsi.ant.plugins.antplus.pcc.AntPlusHeartRatePcc;
 import com.dsi.ant.plugins.antplus.pcc.AntPlusHeartRatePcc.IHeartRateDataReceiver;
@@ -184,13 +185,10 @@ public class AntPlus extends BtHRBase {
 
             mScanDevices.add(ref.deviceAddress);
 
-            hrClientHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    if (mIsScanning) { // NOTE: mIsScanning in user-thread
-                        hrClient.onScanResult(HRDeviceRef.create(NAME, arg0.getDeviceDisplayName(),
-                                Integer.toString(arg0.getAntDeviceNumber())));
-                    }
+            hrClientHandler.post(() -> {
+                if (mIsScanning) { // NOTE: mIsScanning in user-thread
+                    hrClient.onScanResult(HRDeviceRef.create(NAME, arg0.getDeviceDisplayName(),
+                            Integer.toString(arg0.getAntDeviceNumber())));
                 }
             });
         }
@@ -298,75 +296,61 @@ public class AntPlus extends BtHRBase {
         }
     };
 
-    private final IDeviceStateChangeReceiver stateReceiver = new IDeviceStateChangeReceiver() {
-
-        @Override
-        public void onDeviceStateChange(DeviceState arg0) {
-            log("onDeviceStateChange(" + arg0 + ")");
-            switch (arg0) {
-                case CLOSED:
-                    break;
-                case DEAD:
-                    if (mIsConnected) {
-                        /* don't silent reconnect, let upper lay handle that */
-                        reportDisconnected(true);
-                        return;
-                    }
-                    if (mIsConnecting) {
-                        reportConnectFailed(null);
-                        return;
-                    }
-                    break;
-                case PROCESSING_REQUEST:
-                    break;
-                case SEARCHING:
-                    break;
-                case TRACKING:
-                    break;
-                case UNRECOGNIZED:
-                    break;
-            }
+    private final IDeviceStateChangeReceiver stateReceiver = arg0 -> {
+        log("onDeviceStateChange(" + arg0 + ")");
+        switch (arg0) {
+            case CLOSED:
+                break;
+            case DEAD:
+                if (mIsConnected) {
+                    /* don't silent reconnect, let upper lay handle that */
+                    reportDisconnected(true);
+                    return;
+                }
+                if (mIsConnecting) {
+                    reportConnectFailed(null);
+                    return;
+                }
+                break;
+            case PROCESSING_REQUEST:
+                break;
+            case SEARCHING:
+                break;
+            case TRACKING:
+                break;
+            case UNRECOGNIZED:
+                break;
         }
     };
 
     private void reportConnectFailed(RequestAccessResult arg1) {
         disconnectImpl();
         if (hrClientHandler != null) {
-            hrClientHandler.post(new Runnable() {
-
-                @Override
-                public void run() {
-                    if (hrClient != null) {
-                        hrClient.onConnectResult(false);
-                    }
+            hrClientHandler.post(() -> {
+                if (hrClient != null) {
+                    hrClient.onConnectResult(false);
                 }
             });
         }
     }
 
     private void reportConnected(final boolean b) {
-        hrClientHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (hrClient == null) {
-                    disconnectImpl();
-                } else if (mIsConnecting) {
-                    mIsConnected = b;
-                    mIsConnecting = false;
-                    hrClient.onConnectResult(b);
-                }
+        hrClientHandler.post(() -> {
+            if (hrClient == null) {
+                disconnectImpl();
+            } else if (mIsConnecting) {
+                mIsConnected = b;
+                mIsConnecting = false;
+                hrClient.onConnectResult(b);
             }
         });
     }
 
     private void reportDisconnected(final boolean b) {
         disconnectImpl();
-        hrClientHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (hrClient != null)
-                    hrClient.onDisconnectResult(b);
-            }
+        hrClientHandler.post(() -> {
+            if (hrClient != null)
+                hrClient.onDisconnectResult(b);
         });
     }
 
@@ -374,13 +358,9 @@ public class AntPlus extends BtHRBase {
     public void disconnect() {
         disconnectImpl();
         if (hrClientHandler != null) {
-            hrClientHandler.post(new Runnable() {
-
-                @Override
-                public void run() {
-                    if (hrClient != null) {
-                        hrClient.onDisconnectResult(true);
-                    }
+            hrClientHandler.post(() -> {
+                if (hrClient != null) {
+                    hrClient.onDisconnectResult(true);
                 }
             });
         }
@@ -438,7 +418,7 @@ public class AntPlus extends BtHRBase {
     }
 
     @Override
-    public boolean startEnableIntent(Activity activity, int requestCode) {
+    public boolean startEnableIntent(AppCompatActivity activity, int requestCode) {
         return Bt20Base.startEnableIntentImpl(activity, requestCode);
     }
 }

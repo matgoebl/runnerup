@@ -15,13 +15,17 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.runnerup.export;
-import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
+
+import androidx.annotation.ColorRes;
+import androidx.annotation.DrawableRes;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -35,6 +39,7 @@ import org.runnerup.export.format.TCX;
 import org.runnerup.export.oauth2client.OAuth2Activity;
 import org.runnerup.export.oauth2client.OAuth2Server;
 import org.runnerup.export.util.SyncHelper;
+import org.runnerup.util.FileNameHelper;
 import org.runnerup.workout.FileFormats;
 import org.runnerup.workout.Sport;
 
@@ -44,14 +49,13 @@ import java.io.OutputStream;
 import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.Locale;
 
 
 public class DropboxSynchronizer extends DefaultSynchronizer implements OAuth2Server {
 
     public static final String NAME = "Dropbox";
     private static final String PUBLIC_URL = "https://dropbox.com";
-    public static int ENABLED = BuildConfig.DROPBOX_ENABLED;
+    public static final int ENABLED = BuildConfig.DROPBOX_ENABLED;
 
     private static final String UPLOAD_URL = "https://content.dropboxapi.com/2/files/upload";
     private static final String AUTH_URL = "https://www.dropbox.com/oauth2/authorize";
@@ -61,7 +65,7 @@ public class DropboxSynchronizer extends DefaultSynchronizer implements OAuth2Se
     private long id = 0;
     private String access_token = null;
     private FileFormats mFormat;
-    private PathSimplifier simplifier = null;
+    private final PathSimplifier simplifier;
 
     DropboxSynchronizer(Context context, PathSimplifier simplifier) {
         if (ENABLED == 0) {
@@ -70,11 +74,13 @@ public class DropboxSynchronizer extends DefaultSynchronizer implements OAuth2Se
         this.simplifier = simplifier;
     }
 
+    @DrawableRes
     @Override
     public int getIconId() {
         return R.drawable.service_dropbox;
     }
 
+    @ColorRes
     @Override
     public int getColorId() {
         return R.color.serviceDropbox;
@@ -118,6 +124,7 @@ public class DropboxSynchronizer extends DefaultSynchronizer implements OAuth2Se
         return id;
     }
 
+    @NonNull
     @Override
     public String getName() {
         return NAME;
@@ -143,6 +150,7 @@ public class DropboxSynchronizer extends DefaultSynchronizer implements OAuth2Se
         id = config.getAsLong("_id");
     }
 
+    @NonNull
     @Override
     public String getAuthConfig() {
         JSONObject tmp = new JSONObject();
@@ -154,14 +162,16 @@ public class DropboxSynchronizer extends DefaultSynchronizer implements OAuth2Se
         return tmp.toString();
     }
 
+    @NonNull
     @Override
-    public Intent getAuthIntent(Activity activity) {
+    public Intent getAuthIntent(AppCompatActivity activity) {
         return OAuth2Activity.getIntent(activity, this);
     }
 
+    @NonNull
     @Override
     public Status getAuthResult(int resultCode, Intent data) {
-        if (resultCode == Activity.RESULT_OK) {
+        if (resultCode == AppCompatActivity.RESULT_OK) {
             try {
                 String authConfig = data.getStringExtra(DB.ACCOUNT.AUTH_CONFIG);
                 JSONObject obj = new JSONObject(authConfig);
@@ -194,6 +204,7 @@ public class DropboxSynchronizer extends DefaultSynchronizer implements OAuth2Se
         access_token = null;
     }
 
+    @NonNull
     @Override
     public Status connect() {
         Status s = Status.OK;
@@ -222,17 +233,12 @@ public class DropboxSynchronizer extends DefaultSynchronizer implements OAuth2Se
     }
 
     // upload a single file
-    private Status uploadFile(SQLiteDatabase db, final long mID, Sport sport,
-                              StringWriter writer, String fileExt)
+    private Status uploadFile(StringWriter writer, final long mID, String fileBase, String fileExt)
             throws IOException, JSONException {
 
         Status s;
 
         // Upload to default directory /Apps/RunnerUp
-        String file = String.format(Locale.getDefault(), "/RunnerUp_%s_%04d_%s.%s",
-                android.os.Build.MODEL.replaceAll("\\s","_"), mID, sport.TapiriikType(),
-                fileExt);
-
         HttpURLConnection conn = (HttpURLConnection) new URL(UPLOAD_URL).openConnection();
         conn.setDoOutput(true);
         conn.setRequestMethod(RequestMethod.POST.name());
@@ -240,7 +246,7 @@ public class DropboxSynchronizer extends DefaultSynchronizer implements OAuth2Se
         conn.setRequestProperty("Authorization", "Bearer " + access_token);
         JSONObject parameters = new JSONObject();
         try {
-            parameters.put("path", file);
+            parameters.put("path", fileBase + fileExt);
             parameters.put("mode", "add");
             parameters.put("autorename", true);
         } catch (JSONException e) {
@@ -288,6 +294,7 @@ public class DropboxSynchronizer extends DefaultSynchronizer implements OAuth2Se
         return s;
     }
 
+    @NonNull
     @Override
     public Status upload(SQLiteDatabase db, final long mID) {
         Status s = connect();
@@ -296,33 +303,33 @@ public class DropboxSynchronizer extends DefaultSynchronizer implements OAuth2Se
         }
 
         Sport sport = Sport.RUNNING;
+        long start_time = 0;
         try {
 
-            String[] columns = { Constants.DB.ACTIVITY.SPORT };
-            Cursor c = null;
-            try {
-                c = db.query(Constants.DB.ACTIVITY.TABLE, columns, "_id = " + mID,
-                        null, null, null, null);
+            String[] columns = {
+                    Constants.DB.ACTIVITY.SPORT,
+                    DB.ACTIVITY.START_TIME,
+            };
+            try (Cursor c = db.query(DB.ACTIVITY.TABLE, columns, "_id = " + mID,
+                    null, null, null, null)) {
                 if (c.moveToFirst()) {
                     sport = Sport.valueOf(c.getInt(0));
-                }
-            } finally {
-                if (c != null) {
-                    c.close();
+                    start_time = c.getLong(1);
                 }
             }
 
+            String fileBase = FileNameHelper.getExportFileNameWithModel(start_time, sport.TapiriikType());
             if (mFormat.contains(FileFormats.TCX)) {
                 TCX tcx = new TCX(db, simplifier);
                 StringWriter writer = new StringWriter();
                 tcx.export(mID, writer);
-                s = uploadFile(db, mID, sport, writer, FileFormats.TCX.getValue());
+                s = uploadFile(writer, mID, fileBase, FileFormats.TCX.getValue());
             }
             if (s == Status.OK && mFormat.contains(FileFormats.GPX)) {
                 GPX gpx = new GPX(db, true, true, simplifier);
                 StringWriter writer = new StringWriter();
                 gpx.export(mID, writer);
-                s = uploadFile(db, mID, sport, writer, FileFormats.GPX.getValue());
+                s = uploadFile(writer, mID, fileBase, FileFormats.GPX.getValue());
             }
 
         } catch (Exception e) {

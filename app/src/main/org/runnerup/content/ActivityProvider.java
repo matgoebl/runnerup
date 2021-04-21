@@ -27,18 +27,15 @@ import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.ParcelFileDescriptor;
 import android.preference.PreferenceManager;
-import android.support.annotation.NonNull;
 import android.util.Log;
 import android.util.Pair;
+
+import androidx.annotation.NonNull;
 
 import org.runnerup.BuildConfig;
 import org.runnerup.db.DBHelper;
 import org.runnerup.db.PathSimplifier;
-import org.runnerup.export.format.FacebookCourse;
 import org.runnerup.export.format.GPX;
-import org.runnerup.export.format.GoogleStaticMap;
-import org.runnerup.export.format.NikeXML;
-import org.runnerup.export.format.RunKeeper;
 import org.runnerup.export.format.TCX;
 
 import java.io.BufferedOutputStream;
@@ -49,6 +46,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.List;
+import java.util.Objects;
 
 
 public class ActivityProvider extends ContentProvider {
@@ -59,27 +57,12 @@ public class ActivityProvider extends ContentProvider {
     public static final String GPX_MIME = "application/gpx+xml";
     @SuppressWarnings("WeakerAccess")
     public static final String TCX_MIME = "application/vnd.garmin.tcx+xml";
-    @SuppressWarnings("WeakerAccess")
-    public static final String NIKE_MIME = "application/nike+xml";
-    @SuppressWarnings("WeakerAccess")
-    public static final String MAPS_MIME = "application/maps";
-    @SuppressWarnings("WeakerAccess")
-    public static final String FACEBOOK_COURSE_MIME = "application/facebook.course";
-    //public static final String RUNKEEPER_MIME = "application/runkeeper+xml";
 
     // UriMatcher used to match against incoming requests
     @SuppressWarnings("WeakerAccess")
     static final int GPX = 1;
     @SuppressWarnings("WeakerAccess")
     static final int TCX = 2;
-    @SuppressWarnings("WeakerAccess")
-    static final int NIKE = 3;
-    @SuppressWarnings("WeakerAccess")
-    static final int MAPS = 4;
-    @SuppressWarnings("WeakerAccess")
-    static final int FACEBOOK_COURSE = 5;
-    @SuppressWarnings("WeakerAccess")
-    static final int RUNKEEPER = 6;
     private UriMatcher uriMatcher;
 
     @Override
@@ -87,10 +70,6 @@ public class ActivityProvider extends ContentProvider {
         uriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
         uriMatcher.addURI(AUTHORITY, "gpx/#/*", GPX);
         uriMatcher.addURI(AUTHORITY, "tcx/#/*", TCX);
-        uriMatcher.addURI(AUTHORITY, "nike+xml/#/*", NIKE);
-        uriMatcher.addURI(AUTHORITY, "maps/#/*", MAPS);
-        uriMatcher.addURI(AUTHORITY, "facebook.course/#/*", FACEBOOK_COURSE);
-        uriMatcher.addURI(AUTHORITY, "runkeeper/#/*", RUNKEEPER);
         return true;
     }
 
@@ -103,18 +82,18 @@ public class ActivityProvider extends ContentProvider {
                 switch (i) {
                     case 0:
                     default:
-                        path = ctx.getExternalCacheDir();
+                        path = Objects.requireNonNull(ctx).getExternalCacheDir();
                         break;
                     case 1:
-                        path = ctx.getExternalFilesDir("tcx");
+                        path = Objects.requireNonNull(ctx).getExternalFilesDir("tcx");
                         break;
                     case 2:
-                        path = ctx.getCacheDir();
+                        path = Objects.requireNonNull(ctx).getCacheDir();
                         break;
                 }
                 @SuppressWarnings("ConstantConditions") final File file = new File(path.getAbsolutePath() + File.separator + name);
                 final OutputStream out = new BufferedOutputStream(new FileOutputStream(file));
-                Log.e(getClass().getName(), Integer.toString(i) + ": putting cache file in: "
+                Log.e(getClass().getName(), i + ": putting cache file in: "
                         + file.getAbsolutePath());
                 //noinspection Convert2Diamond
                 return new Pair<File, OutputStream>(file, out);
@@ -134,10 +113,6 @@ public class ActivityProvider extends ContentProvider {
         switch (res) {
             case GPX:
             case TCX:
-            case NIKE:
-            case MAPS:
-            case FACEBOOK_COURSE:
-            case RUNKEEPER:
                 final List<String> list = uri.getPathSegments();
                 final String id = list.get(list.size() - 2);
                 final long activityId = Long.parseLong(id);
@@ -155,32 +130,20 @@ public class ActivityProvider extends ContentProvider {
                 PathSimplifier simplifier = PathSimplifier.getPathSimplifierForExport(getContext());
 
                 try {
-                    if (res == TCX) {
-                        TCX tcx = new TCX(mDB, simplifier);
-                        tcx.export(activityId, new OutputStreamWriter(out.second));
-                        Log.e(getClass().getName(), "export tcx");
-                    } else if (res == GPX) {
-                        final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this.getContext());
-                        //The data must exist if log, use the log option as a possibility to "deactivate" too
-                        boolean extraData = prefs.getBoolean(this.getContext().getString(org.runnerup.R.string.pref_log_gpx_accuracy), false);
-                        GPX gpx = new GPX(mDB, true, extraData, simplifier);
-                        gpx.export(activityId, new OutputStreamWriter(out.second));
-                        Log.e(getClass().getName(), "export gpx");
-                    } else if (res == NIKE) {
-                        NikeXML xml = new NikeXML(mDB, simplifier);
-                        xml.export(activityId, new OutputStreamWriter(out.second));
-                    } else if (res == MAPS) {
-                        GoogleStaticMap map = new GoogleStaticMap(mDB, simplifier);
-                        String str = map.export(activityId, 2000);
-                        out.second.write(str.getBytes());
-                    } else if (res == FACEBOOK_COURSE) {
-                        FacebookCourse map = new FacebookCourse(getContext(), mDB, simplifier);
-                        final boolean includeMap = true;
-                        String str = map.export(activityId, includeMap, null).toString();
-                        out.second.write(str.getBytes());
-                    } else if (res == RUNKEEPER) {
-                        RunKeeper map = new RunKeeper(mDB, simplifier);
-                        map.export(activityId, new OutputStreamWriter(out.second));
+                    switch (res) {
+                        case TCX:
+                            TCX tcx = new TCX(mDB, simplifier);
+                            tcx.export(activityId, new OutputStreamWriter(out.second));
+                            Log.e(getClass().getName(), "export tcx");
+                            break;
+                        case GPX:
+                            final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this.getContext());
+                            //The data must exist if log, use the log option as a possibility to "deactivate" too
+                            boolean extraData = prefs.getBoolean(this.getContext().getString(org.runnerup.R.string.pref_log_gpx_accuracy), false);
+                            GPX gpx = new GPX(mDB, true, extraData, simplifier);
+                            gpx.export(activityId, new OutputStreamWriter(out.second));
+                            Log.e(getClass().getName(), "export gpx");
+                            break;
                     }
                     out.second.flush();
                     out.second.close();
@@ -222,12 +185,6 @@ public class ActivityProvider extends ContentProvider {
                 return GPX_MIME;
             case TCX:
                 return TCX_MIME;
-            case NIKE:
-                return NIKE_MIME;
-            case MAPS:
-                return MAPS_MIME;
-            case FACEBOOK_COURSE:
-                return FACEBOOK_COURSE_MIME;
         }
         return null;
     }

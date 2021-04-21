@@ -19,11 +19,8 @@ package org.runnerup.view;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.util.Pair;
 import android.view.LayoutInflater;
@@ -36,11 +33,13 @@ import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+
 import org.runnerup.R;
 import org.runnerup.common.util.Constants;
 import org.runnerup.util.HRZoneCalculator;
 import org.runnerup.util.HRZones;
-import org.runnerup.widget.SpinnerInterface;
 import org.runnerup.widget.TitleSpinner;
 import org.runnerup.widget.WidgetUtil;
 
@@ -61,9 +60,9 @@ public class HRZonesActivity extends AppCompatActivity implements Constants {
 
     private View addZoneRow(LayoutInflater inflator, ViewGroup root, int zone) {
         @SuppressLint("InflateParams") TableRow row = (TableRow) inflator.inflate(R.layout.heartratezonerow, null);
-        TextView tv = (TextView) row.findViewById(R.id.zonetext);
-        EditText lo = (EditText) row.findViewById(R.id.zonelo);
-        EditText hi = (EditText) row.findViewById(R.id.zonehi);
+        TextView tv = row.findViewById(R.id.zonetext);
+        EditText lo = row.findViewById(R.id.zonelo);
+        EditText hi = row.findViewById(R.id.zonehi);
         Pair<Integer, Integer> lim = hrZoneCalculator.getZoneLimits(zone);
         tv.setText(String.format(Locale.getDefault(), "%s %d %d%% - %d%%", getString(R.string.Zone), zone, lim.first, lim.second));
         lo.setTag("zone" + zone + "lo");
@@ -82,10 +81,10 @@ public class HRZonesActivity extends AppCompatActivity implements Constants {
 
         hrZones = new HRZones(this);
         hrZoneCalculator = new HRZoneCalculator(this);
-        ageSpinner = (TitleSpinner) findViewById(R.id.hrz_age);
-        sexSpinner = (TitleSpinner) findViewById(R.id.hrz_sex);
-        maxHRSpinner = (TitleSpinner) findViewById(R.id.hrz_mhr);
-        TableLayout zonesTable = (TableLayout) findViewById(R.id.zones_table);
+        ageSpinner = findViewById(R.id.hrz_age);
+        sexSpinner = findViewById(R.id.hrz_sex);
+        maxHRSpinner = findViewById(R.id.hrz_mhr);
+        TableLayout zonesTable = findViewById(R.id.zones_table);
         {
             int zoneCount = hrZoneCalculator.getZoneCount();
             LayoutInflater inflator = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
@@ -95,33 +94,21 @@ public class HRZonesActivity extends AppCompatActivity implements Constants {
                 zonesTable.addView(row);
             }
         }
-        ageSpinner.setOnCloseDialogListener(new SpinnerInterface.OnCloseDialogListener() {
-
-            @Override
-            public void onClose(SpinnerInterface spinner, boolean ok) {
-                if (ok) {
-                    recomputeMaxHR();
-                }
+        ageSpinner.setOnCloseDialogListener((spinner, ok) -> {
+            if (ok) {
+                recomputeMaxHR();
             }
         });
 
-        sexSpinner.setOnCloseDialogListener(new SpinnerInterface.OnCloseDialogListener() {
-
-            @Override
-            public void onClose(SpinnerInterface spinner, boolean ok) {
-                if (ok) {
-                    recomputeMaxHR();
-                }
+        sexSpinner.setOnCloseDialogListener((spinner, ok) -> {
+            if (ok) {
+                recomputeMaxHR();
             }
         });
 
-        maxHRSpinner.setOnCloseDialogListener(new SpinnerInterface.OnCloseDialogListener() {
-
-            @Override
-            public void onClose(SpinnerInterface spinner, boolean ok) {
-                if (ok) {
-                    recomputeZones();
-                }
+        maxHRSpinner.setOnCloseDialogListener((spinner, ok) -> {
+            if (ok) {
+                recomputeZones();
             }
         });
     }
@@ -134,13 +121,14 @@ public class HRZonesActivity extends AppCompatActivity implements Constants {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.menu_hrzonessettings_clear:
-                clearHRSettings();
-                break;
-            case android.R.id.home:
+        int id = item.getItemId();
+        if (id == R.id.menu_hrzonessettings_clear) {
+            clearHRSettings();
+        }
+        else if (id == android.R.id.home) {
                 return super.onOptionsItemSelected(item);
         }
+
         return true;
     }
 
@@ -169,38 +157,30 @@ public class HRZonesActivity extends AppCompatActivity implements Constants {
     }
 
     private void recomputeMaxHR() {
-        new Handler().post(new Runnable() {
+        new Handler().post(() -> {
+            try {
+                int age = Integer.parseInt(ageSpinner.getValue().toString());
+                int maxHR = HRZoneCalculator.computeMaxHR(age,
+                        "Male".contentEquals(sexSpinner.getValue()));
+                maxHRSpinner.setValue(Integer.toString(maxHR));
+                recomputeZones();
+            } catch (NumberFormatException ex) {
 
-            @Override
-            public void run() {
-                try {
-                    int age = Integer.parseInt(ageSpinner.getValue().toString());
-                    int maxHR = HRZoneCalculator.computeMaxHR(age,
-                            "Male".contentEquals(sexSpinner.getValue()));
-                    maxHRSpinner.setValue(Integer.toString(maxHR));
-                    recomputeZones();
-                } catch (NumberFormatException ex) {
-
-                }
             }
         });
     }
 
     private void recomputeZones() {
-        new Handler().post(new Runnable() {
-
-            @Override
-            public void run() {
-                try {
-                    int zoneCount = hrZoneCalculator.getZoneCount();
-                    int maxHR = Integer.parseInt(maxHRSpinner.getValue().toString());
-                    for (int i = 0; i < zoneCount; i++) {
-                        Pair<Integer, Integer> val = hrZoneCalculator.computeHRZone(i + 1, maxHR);
-                        zones.get(2 * i /*+ 0*/).setText(String.format(Locale.getDefault(), "%d", val.first));
-                        zones.get(2 * i + 1).setText(String.format(Locale.getDefault(), "%d", val.second));
-                    }
-                } catch (NumberFormatException ex) {
+        new Handler().post(() -> {
+            try {
+                int zoneCount = hrZoneCalculator.getZoneCount();
+                int maxHR = Integer.parseInt(maxHRSpinner.getValue().toString());
+                for (int i = 0; i < zoneCount; i++) {
+                    Pair<Integer, Integer> val = hrZoneCalculator.computeHRZone(i + 1, maxHR);
+                    zones.get(2 * i /*+ 0*/).setText(String.format(Locale.getDefault(), "%d", val.first));
+                    zones.get(2 * i + 1).setText(String.format(Locale.getDefault(), "%d", val.second));
                 }
+            } catch (NumberFormatException ex) {
             }
         });
     }
@@ -221,29 +201,23 @@ public class HRZonesActivity extends AppCompatActivity implements Constants {
     }
 
     private void clearHRSettings() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this)
-                .setTitle(getString(R.string.Clear_heart_rate_zone_settings))
-                .setMessage(getString(R.string.Are_you_sure))
-                .setPositiveButton(getString(R.string.OK), new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int which) {
-                ageSpinner.clear();
-                sexSpinner.clear();
-                maxHRSpinner.clear();
-                hrZones.clear();
-                dialog.dismiss();
-                skipSave = true;
-                finish();
-            }
-        })
-                .setNegativeButton(getString(R.string.Cancel),
-                new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int which) {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.Clear_heart_rate_zone_settings)
+                .setMessage(R.string.Are_you_sure)
+                .setPositiveButton(R.string.OK, (dialog, which) -> {
+                    ageSpinner.clear();
+                    sexSpinner.clear();
+                    maxHRSpinner.clear();
+                    hrZones.clear();
+                    dialog.dismiss();
+                    skipSave = true;
+                    finish();
+                })
+                .setNegativeButton(R.string.Cancel,
                         // Do nothing but close the dialog
-                        dialog.dismiss();
-                    }
-
-                });
-        builder.show();
+                        (dialog, which) -> dialog.dismiss()
+                )
+                .show();
     }
 
     @Override

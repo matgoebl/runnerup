@@ -18,7 +18,6 @@
 package org.runnerup.hr;
 
 import android.annotation.TargetApi;
-import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
@@ -32,6 +31,8 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.SystemClock;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 import java.util.HashSet;
 import java.util.List;
@@ -112,7 +113,7 @@ public class AndroidBLEHRProvider extends BtHRBase implements HRProvider {
         return Bt20Base.isEnabledImpl();
     }
 
-    public boolean startEnableIntent(Activity activity, int requestCode) {
+    public boolean startEnableIntent(AppCompatActivity activity, int requestCode) {
         return Bt20Base.startEnableIntentImpl(activity, requestCode);
     }
 
@@ -266,13 +267,12 @@ public class AndroidBLEHRProvider extends BtHRBase implements HRProvider {
                     if (newState == BluetoothProfile.STATE_CONNECTED) {
                         boolean res = btGatt.discoverServices();
                         log("discoverServices() => " + res);
-                        return;
                     } else {
                         boolean res = btGatt.connect();
                         log("reconnect while connecting => btGatt.connect() => "
                                         + res);
-                        return;
                     }
+                    return;
                 }
 
                 if (mIsDisconnecting) {
@@ -331,14 +331,9 @@ public class AndroidBLEHRProvider extends BtHRBase implements HRProvider {
             }
 
             log(" => DummyRead");
-            if (status == BluetoothGatt.GATT_SUCCESS) {
-                DummyReadForSecLevelCheck(gatt);
-                // continue in onCharacteristicRead
-            } else {
-                DummyReadForSecLevelCheck(gatt);
-                // reportConnectFailed("onServicesDiscovered(" + gatt + ", " +
-                // status + ")");
-            }
+            DummyReadForSecLevelCheck(gatt);
+            // if GATT_SUCCESS, continue in onCharacteristicRead
+            // no report on error
         }
 
         /*
@@ -472,16 +467,13 @@ public class AndroidBLEHRProvider extends BtHRBase implements HRProvider {
                 if (CONNECT_IN_OWN_THREAD_FROM_ON_LE_SCAN) {
                     // Android 4.3
                     log("CONNECT_IN_OWN_THREAD_FROM_ON_LE_SCAN");
-                    hrClientHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            log("before connect");
-                            btGatt = btDevice.connectGatt(context, false, btGattCallbacks);
-                            if (btGatt == null) {
-                                reportConnectFailed("connectGatt returned null");
-                            } else {
-                                log("connectGatt: " + btGatt);
-                            }
+                    hrClientHandler.post(() -> {
+                        log("before connect");
+                        btGatt = btDevice.connectGatt(context, false, btGattCallbacks);
+                        if (btGatt == null) {
+                            reportConnectFailed("connectGatt returned null");
+                        } else {
+                            log("connectGatt: " + btGatt);
                         }
                     });
                 } else {
@@ -500,12 +492,9 @@ public class AndroidBLEHRProvider extends BtHRBase implements HRProvider {
 
             mScanDevices.add(address);
 
-            hrClientHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    if (mIsScanning) { // NOTE: mIsScanning in user-thread
-                        hrClient.onScanResult(Bt20Base.createDeviceRef(NAME, device));
-                    }
+            hrClientHandler.post(() -> {
+                if (mIsScanning) { // NOTE: mIsScanning in user-thread
+                    hrClient.onScanResult(Bt20Base.createDeviceRef(NAME, device));
                 }
             });
         }
@@ -516,7 +505,7 @@ public class AndroidBLEHRProvider extends BtHRBase implements HRProvider {
 
     @Override
     public void startScan() {
-        if (mIsScanning)
+        if (mIsScanning || btAdapter == null)
             return;
 
         mIsScanning = true;
@@ -550,7 +539,7 @@ public class AndroidBLEHRProvider extends BtHRBase implements HRProvider {
     public void connect(HRDeviceRef ref) {
         stopScan();
 
-        if (!Bt20Base.isEnabledImpl()) {
+        if (!Bt20Base.isEnabledImpl() || btAdapter == null) {
             reportConnectFailed("BT is not enabled");
             return;
         }
@@ -584,14 +573,11 @@ public class AndroidBLEHRProvider extends BtHRBase implements HRProvider {
 
     private void reportConnected(final boolean b) {
         if (hrClientHandler != null) {
-            hrClientHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    if (mIsConnecting && hrClient != null) {
-                        mIsConnected = b;
-                        mIsConnecting = false;
-                        hrClient.onConnectResult(b);
-                    }
+            hrClientHandler.post(() -> {
+                if (mIsConnecting && hrClient != null) {
+                    mIsConnected = b;
+                    mIsConnecting = false;
+                    hrClient.onConnectResult(b);
                 }
             });
         }

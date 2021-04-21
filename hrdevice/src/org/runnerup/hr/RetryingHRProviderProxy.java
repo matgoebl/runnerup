@@ -1,8 +1,9 @@
 package org.runnerup.hr;
 
-import android.app.Activity;
 import android.os.Handler;
 import android.os.Looper;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 /**
  * Created by jonas on 11/9/14.
@@ -80,7 +81,7 @@ public class RetryingHRProviderProxy implements HRProvider, HRProvider.HRClient 
             case CONNECTING:
                 return 750 * (attempt - 1);
             case RECONNECTING:
-                return 3000 * (attempt < 6 ? attempt : 6);
+                return 3000 * (Math.min(attempt, 6));
         }
         return 0;
     }
@@ -107,7 +108,7 @@ public class RetryingHRProviderProxy implements HRProvider, HRProvider.HRClient 
     }
 
     @Override
-    public boolean startEnableIntent(Activity activity, int requestCode) {
+    public boolean startEnableIntent(AppCompatActivity activity, int requestCode) {
         return provider.startEnableIntent(activity, requestCode);
     }
 
@@ -233,12 +234,9 @@ public class RetryingHRProviderProxy implements HRProvider, HRProvider.HRClient 
 
             int delayMillis = getRetryDelayMillis();
             log("retry in " + delayMillis + "ms");
-            handler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    log("retry connect");
-                    provider.connect(connectRef);
-                }
+            handler.postDelayed(() -> {
+                log("retry connect");
+                provider.connect(connectRef);
             }, delayMillis);
 
         }
@@ -319,7 +317,7 @@ public class RetryingHRProviderProxy implements HRProvider, HRProvider.HRClient 
 
         String res = "[ RetryingHRProviderProxy: " +
                 provider.getProviderName() +
-                ", attempt: " + Integer.toString(attempt) +
+                ", attempt: " + attempt +
                 " ]" +
                 ", state: " + state + ", request: " + requestedState + ", " + msg;
         System.err.println(res);
@@ -327,12 +325,9 @@ public class RetryingHRProviderProxy implements HRProvider, HRProvider.HRClient 
             if(Looper.myLooper() == Looper.getMainLooper()) {
                 client.log(this, msg);
             } else {
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (client != null)
-                            client.log(RetryingHRProviderProxy.this, msg);
-                    }
+                handler.post(() -> {
+                    if (client != null)
+                        client.log(RetryingHRProviderProxy.this, msg);
                 });
             }
         }

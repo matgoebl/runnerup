@@ -3,17 +3,23 @@
 ############################
 # RunnerUp internal
 
-# All implemetations of internal interfaces do not use all methods
--dontnote org.runnerup.view.StepButton
--dontnote org.runnerup.widget.ClassicSpinner
--dontnote org.runnerup.widget.TitleSpinner
+# will keep line numbers and file name obfuscation
+-renamesourcefileattribute SourceFile
+-keepattributes SourceFile,LineNumberTable
+-keepattributes EnclosingMethod
+
+# All implementations of internal interfaces do not use all methods
+# org.runnerup.view.StepButton.**
+# org.runnerup.widget.ClassicSpinner.**
+# org.runnerup.widget.TitleSpinner.**
+-keep,includedescriptorclasses class org.runnerup.**
 
 #PlayServices related?
 -dontnote com.google.protobuf.zz*
 -dontnote com.google.android.gms.dynamic.IObjectWrapper
 
 #AntPlus is optional - used by reflection
--keep class org.runnerup.hr.AntPlus {
+-keep,includedescriptorclasses class org.runnerup.hr.AntPlus {
   *;
 }
 -keepclassmembers class org.runnerup.hr.AntPlus {
@@ -23,14 +29,20 @@
 ############################
 # ANTplus
 
-#ref to fit
 -keep class com.dsi.ant.plugins.**
+-keeppackagenames com.dsi.ant.**
+
+#ref to com.garmin.fit
 -dontwarn com.dsi.ant.**
 
 ############################
 # GraphView
 
 -dontnote com.jjoe64.graphview.LegendRenderer
+
+############################
+# other, unknown
+-dontnote Object
 
 ############################
 # Other mapbox
@@ -42,6 +54,9 @@
 -dontnote okio.BufferedSink
 
 #############################
+# Keep descriptor class
+-keep class com.mapbox.mapboxsdk.maps.renderer.glsurfaceview.MapboxGLSurfaceView$OnGLSurfaceViewDetachedListener
+
 # From mapbox demo https://github.com/mapbox/mapbox-android-demo/blob/master/MapboxAndroidDemo/proguard-rules.pro
 
 # Retrofit 2
@@ -70,7 +85,7 @@
 # Picasso
 -dontnote com.squareup.**
 
--dontwarn android.support.**
+#-dontwarn android.support.**
 -dontwarn java.lang.**
 -dontwarn org.codehaus.**
 -dontwarn com.google.**
@@ -123,28 +138,28 @@
 
 ## Android architecture components: Lifecycle
 # LifecycleObserver's empty constructor is considered to be unused by proguard
--keepclassmembers class * implements android.arch.lifecycle.LifecycleObserver {
+-keepclassmembers class * implements androidx.lifecycle.LifecycleObserver {
     <init>(...);
 }
 # ViewModel's empty constructor is considered to be unused by proguard
--keepclassmembers class * extends android.arch.lifecycle.ViewModel {
+-keepclassmembers class * extends androidx.lifecycle.ViewModel {
     <init>(...);
 }
 
 # keep Lifecycle State and Event enums values
--keepclassmembers class android.arch.lifecycle.Lifecycle$State { *; }
--keepclassmembers class android.arch.lifecycle.Lifecycle$Event { *; }
+-keepclassmembers class androidx.lifecycle.Lifecycle$State { *; }
+-keepclassmembers class androidx.lifecycle.Lifecycle$Event { *; }
 # keep methods annotated with @OnLifecycleEvent even if they seem to be unused
 # (Mostly for LiveData.LifecycleBoundObserver.onStateChange(), but who knows)
 -keepclassmembers class * {
-    @android.arch.lifecycle.OnLifecycleEvent *;
+    @androidx.lifecycle.OnLifecycleEvent *;
 }
 
--keepclassmembers class * implements android.arch.lifecycle.LifecycleObserver {
+-keepclassmembers class * implements androidx.lifecycle.LifecycleObserver {
     <init>(...);
 }
 
--keep class * implements android.arch.lifecycle.LifecycleObserver {
+-keep class * implements androidx.lifecycle.LifecycleObserver {
     <init>(...);
 }
 -keepclassmembers class android.arch.** { *; }
@@ -161,3 +176,4 @@
 -dontnote org.xmlpull.v1.**
 -keep class org.xmlpull.** { *; }
 -keepclassmembers class org.xmlpull.** { *; }
+-keep class androidx.core.app.CoreComponentFactory { *; }

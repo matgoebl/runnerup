@@ -14,7 +14,7 @@
   ~  You should have received a copy of the GNU General Public License
   ~  along with this program.  If not, see <http://www.gnu.org/licenses/>.
   -->
-<LinearLayout android:id="@+id/tab1_layout"
+<LinearLayout android:id="@+id/start_tab1_layout"
               xmlns:android="http://schemas.android.com/apk/res/android"
               xmlns:app="http://schemas.android.com/apk/res-auto"
               xmlns:tools="http://schemas.android.com/tools"
@@ -23,7 +23,7 @@
               android:orientation="vertical"
               tools:context=".view.StartActivity">
 
-    <android.support.v7.widget.Toolbar
+    <androidx.appcompat.widget.Toolbar
         android:id="@+id/start_actionbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -37,9 +37,11 @@
             android:layout_height="wrap_content"
             android:contentDescription="@string/Sport"
             android:key="@string/pref_sport"
-            android:spinnerMode="dropdown"/>
+            android:minWidth="48dp"
+            android:minHeight="48dp"
+            android:spinnerMode="dropdown" />
 
-    </android.support.v7.widget.Toolbar>
+    </androidx.appcompat.widget.Toolbar>
 
     <TabHost
         android:id="@+id/tabhost_start"
@@ -55,19 +57,21 @@
                 android:id="@android:id/tabs"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_alignParentTop="true"/>
+                android:layout_alignParentTop="true"
+                android:minWidth="48dp"
+                android:minHeight="48dp" />
 
             <FrameLayout
                 android:id="@android:id/tabcontent"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_below="@android:id/tabs">
+                android:layout_below="@android:id/tabs" >
 
-                <include layout="@layout/start_basic"/>
+                <include layout="@layout/start_basic" />
 
-                <include layout="@layout/start_interval"/>
+                <include layout="@layout/start_interval" />
 
-                <include layout="@layout/start_advanced"/>
+                <include layout="@layout/start_advanced" />
             </FrameLayout>
 
             <RelativeLayout
@@ -108,6 +112,7 @@
                             android:id="@+id/hr_indicator"
                             android:layout_width="14dp"
                             android:layout_height="14dp"
+                            android:layout_marginEnd="4dp"
                             android:layout_marginRight="4dp"
                             android:contentDescription="@string/Heart_Rate_Monitor"
                             android:visibility="gone"
@@ -118,6 +123,7 @@
                             style="@style/StatusText"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginEnd="8dp"
                             android:layout_marginRight="8dp"
                             android:visibility="gone"
                             />
@@ -126,6 +132,7 @@
                             android:id="@+id/wearos_indicator"
                             android:layout_width="14dp"
                             android:layout_height="14dp"
+                            android:layout_marginEnd="4dp"
                             android:layout_marginRight="4dp"
                             android:contentDescription="@string/Wear_OS_Device"
                             android:visibility="gone"
@@ -136,6 +143,7 @@
                             style="@style/StatusText"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginEnd="8dp"
                             android:layout_marginRight="8dp"
                             />
 
@@ -143,6 +151,7 @@
                             android:id="@+id/gps_indicator"
                             android:layout_width="14dp"
                             android:layout_height="14dp"
+                            android:layout_marginEnd="4dp"
                             android:layout_marginRight="4dp"
                             app:srcCompat="@drawable/ic_gps_1"
                             tools:ignore="ContentDescription"/>
@@ -169,6 +178,7 @@
                             android:id="@+id/gps_detail_indicator"
                             android:layout_width="14dp"
                             android:layout_height="14dp"
+                            android:layout_marginEnd="4dp"
                             android:layout_marginRight="4dp"
                             app:srcCompat="@drawable/ic_gps_1"
                             tools:ignore="ContentDescription"/>
@@ -190,8 +200,11 @@
                     android:layout_height="16dp"
                     android:layout_centerVertical="true"
                     android:layout_toRightOf="@id/status_frame"
+                    android:layout_toEndOf="@id/status_frame"
+                    android:minWidth="48dp"
+                    android:minHeight="48dp"
                     app:srcCompat="@drawable/ic_expand_up_white_24dp"
-                    tools:ignore="ContentDescription"/>
+                    tools:ignore="ContentDescription" />
 
                 <Button
                     android:id="@+id/gps_enable_button"
@@ -199,8 +212,9 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentRight="true"
+                    android:layout_alignParentEnd="true"
                     android:layout_centerVertical="true"
-                    tools:ignore="RelativeOverlap"/>
+                    tools:ignore="RelativeOverlap" />
 
             </RelativeLayout>
 
@@ -209,6 +223,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentBottom="true"
+                android:layout_alignParentEnd="true"
                 android:layout_alignParentRight="true"
                 android:layout_marginBottom="20dp"
                 android:layout_marginLeft="@dimen/activity_margin"
